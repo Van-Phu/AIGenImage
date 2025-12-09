@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { editImageWithGemini } from './services/geminiService';
 import { AppStatus, QueueItem, Prompt, AppSettings, Resolution, Theme, Language } from './types';
-import { UploadIcon, MagicIcon, DownloadIcon, AlertIcon, RefreshIcon, SettingsIcon, SunIcon, MoonIcon } from './components/Icons';
+import { UploadIcon, MagicIcon, DownloadIcon, AlertIcon, RefreshIcon, SettingsIcon, SunIcon, MoonIcon, CheckIcon } from './components/Icons';
 import { LoadingOverlay } from './components/LoadingOverlay';
 import { PromptManager } from './components/PromptManager';
 import { translations } from './translations';
@@ -105,6 +105,8 @@ const DEFAULT_SETTINGS: AppSettings = {
 function App() {
   const [hasApiKey, setHasApiKey] = useState<boolean>(false);
   const [isCheckingKey, setIsCheckingKey] = useState<boolean>(true);
+  const [storedApiKey, setStoredApiKey] = useState<string | null>(null);
+  const [manualKeyInput, setManualKeyInput] = useState<string>('');
   
   // App Settings State
   const [settings, setSettings] = useState<AppSettings>(() => {
@@ -140,10 +142,11 @@ function App() {
 
   // Derived Values
   const t = translations[settings.language];
+  const isAIStudio = (window as any).aistudio !== undefined;
 
   // --- Effects ---
 
-  // 1. Check API Key
+  // 1. Check API Key (Environment or LocalStorage)
   useEffect(() => {
     checkApiKey();
   }, []);
@@ -167,11 +170,26 @@ function App() {
 
   const checkApiKey = async () => {
     try {
+      // 1. Check if running in AI Studio (priority)
       const win = window as any;
       if (win.aistudio) {
         const hasKey = await win.aistudio.hasSelectedApiKey();
-        setHasApiKey(hasKey);
+        if (hasKey) {
+          setHasApiKey(true);
+          setIsCheckingKey(false);
+          return;
+        }
       }
+
+      // 2. Check Local Storage
+      const savedKey = localStorage.getItem('gemini_api_key');
+      if (savedKey) {
+        setStoredApiKey(savedKey);
+        setHasApiKey(true);
+      } else {
+        setHasApiKey(false);
+      }
+
     } catch (e) {
       console.error("Error checking API key status", e);
     } finally {
@@ -179,7 +197,7 @@ function App() {
     }
   };
 
-  const handleSelectKey = async () => {
+  const handleSelectKeyAIStudio = async () => {
     try {
       const win = window as any;
       if (win.aistudio) {
@@ -190,6 +208,20 @@ function App() {
     } catch (e) {
       console.error("Error selecting API key", e);
     }
+  };
+
+  const handleSaveManualKey = () => {
+    if (!manualKeyInput.trim()) return;
+    localStorage.setItem('gemini_api_key', manualKeyInput.trim());
+    setStoredApiKey(manualKeyInput.trim());
+    setHasApiKey(true);
+    setErrorMsg(null);
+  };
+
+  const handleClearKey = () => {
+    setHasApiKey(false);
+    setStoredApiKey(null);
+    localStorage.removeItem('gemini_api_key');
   };
 
   // Helper to read file as base64
@@ -304,13 +336,16 @@ function App() {
           prompt: activePrompt.content, 
           logoBase64: settings.savedLogo,
           logoMimeType: settings.savedLogoMime,
-          imageSize: settings.resolution
+          imageSize: settings.resolution,
+          apiKey: storedApiKey // Pass the stored key manually if it exists
         });
 
         setQueue(prev => prev.map(i => i.id === id ? { ...i, status: 'success', resultPreview: resultImage } : i));
       } catch (err: any) {
         if (err.message === "API_KEY_INVALID") {
             setHasApiKey(false);
+            setStoredApiKey(null); // Clear invalid key
+            localStorage.removeItem('gemini_api_key');
             setErrorMsg(t.apiKeyInvalid);
             setIsProcessing(false);
             return;
@@ -388,23 +423,55 @@ function App() {
           <MagicIcon />
         </div>
         <h1 className="text-3xl font-bold mb-2 text-center">{t.appTitle} <span className="text-primary">Pro</span></h1>
-        <p className="text-secondary max-w-md text-center mb-8">
+        <p className="text-secondary max-w-md text-center mb-6">
           {t.apiKeyDesc}
         </p>
-        <button 
-          onClick={handleSelectKey}
-          className="px-8 py-3 bg-foreground text-background font-semibold rounded-full hover:scale-105 transition-transform shadow-xl flex items-center gap-2"
-        >
-          {t.connectKey}
-        </button>
+
+        <div className="w-full max-w-md bg-surface border border-border rounded-xl p-6 shadow-xl">
+           {isAIStudio ? (
+               <button 
+                onClick={handleSelectKeyAIStudio}
+                className="w-full px-8 py-3 bg-foreground text-background font-semibold rounded-lg hover:scale-[1.02] transition-transform flex items-center justify-center gap-2"
+              >
+                {t.connectKey}
+              </button>
+           ) : (
+             <div className="flex flex-col gap-3">
+                <label className="text-sm font-medium text-foreground">{t.enterApiKey}</label>
+                <div className="relative">
+                  <input 
+                    type="password" 
+                    value={manualKeyInput}
+                    onChange={(e) => setManualKeyInput(e.target.value)}
+                    className="w-full bg-background border border-border rounded-lg px-4 py-3 text-foreground focus:ring-2 focus:ring-primary/50 focus:border-primary focus:outline-none"
+                    placeholder={t.apiKeyPlaceholder}
+                  />
+                </div>
+                <button 
+                  onClick={handleSaveManualKey}
+                  disabled={manualKeyInput.length < 10}
+                  className={`
+                    w-full px-8 py-3 rounded-lg font-semibold flex items-center justify-center gap-2 transition-all
+                    ${manualKeyInput.length < 10 ? 'bg-secondary/20 text-secondary cursor-not-allowed' : 'bg-primary text-white hover:bg-primary/90 hover:scale-[1.02]'}
+                  `}
+                >
+                  <CheckIcon />
+                  {t.saveKey}
+                </button>
+                <p className="text-xs text-secondary text-center mt-1">{t.apiKeyNote}</p>
+             </div>
+           )}
+        </div>
+        
         <a 
-          href="https://ai.google.dev/gemini-api/docs/billing" 
+          href="https://aistudio.google.com/app/apikey" 
           target="_blank" 
           rel="noreferrer"
           className="mt-6 text-sm text-secondary hover:text-primary transition-colors underline"
         >
           {t.readBilling}
         </a>
+        
         {errorMsg && (
           <div className="mt-8 p-3 rounded bg-red-500/10 border border-red-500/20 text-red-500 dark:text-red-300 text-sm flex items-center gap-2">
             <AlertIcon />
@@ -477,8 +544,9 @@ function App() {
 
             {/* API Key */}
             <button 
-              onClick={() => setHasApiKey(false)}
+              onClick={handleClearKey}
               className="text-xs text-secondary hover:text-foreground border border-border px-3 py-1.5 rounded-full hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
+              title={t.switchKey}
             >
               Key
             </button>

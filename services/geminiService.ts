@@ -11,17 +11,20 @@ interface EditImageParams {
   logoBase64?: string | null;
   logoMimeType?: string;
   imageSize: string; // '1K' | '2K' | '4K'
+  apiKey?: string | null; // Allow passing explicit key
 }
 
-export const editImageWithGemini = async ({ base64Image, mimeType, prompt, logoBase64, logoMimeType, imageSize }: EditImageParams): Promise<string> => {
+export const editImageWithGemini = async ({ base64Image, mimeType, prompt, logoBase64, logoMimeType, imageSize, apiKey }: EditImageParams): Promise<string> => {
   try {
-    // CRITICAL: Always create a new instance right before making the call.
-    // This ensures we use the most up-to-date API key selected by the user via window.aistudio.openSelectKey()
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    // Prioritize the passed apiKey, fallback to process.env (for AI Studio context)
+    const finalApiKey = apiKey || process.env.API_KEY;
 
-    if (!process.env.API_KEY) {
-      throw new Error("API Key is missing. Please connect your API key first.");
+    if (!finalApiKey) {
+      throw new Error("API Key is missing. Please connect or enter your API key first.");
     }
+
+    // CRITICAL: Always create a new instance right before making the call.
+    const ai = new GoogleGenAI({ apiKey: finalApiKey });
 
     // Prepare the parts
     // Clean the base64 string if it contains the header (e.g., "data:image/png;base64,")

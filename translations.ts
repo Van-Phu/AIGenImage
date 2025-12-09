@@ -52,7 +52,11 @@ type TranslationKey =
   | 'resolution'
   | 'light'
   | 'dark'
-  | 'apiKeyInvalid';
+  | 'apiKeyInvalid'
+  | 'enterApiKey'
+  | 'saveKey'
+  | 'apiKeyPlaceholder'
+  | 'apiKeyNote';
 
 export const translations: Record<Language, Record<TranslationKey, string>> = {
   en: {
@@ -60,11 +64,11 @@ export const translations: Record<Language, Record<TranslationKey, string>> = {
     batchEditor: 'Batch Editor',
     loading: 'Loading...',
     apiKeyMissing: 'VP GEN IMAGE',
-    apiKeyDesc: 'To use the advanced Gemini 3 Pro (Nano Banana) model for image editing, you must connect a valid Google Cloud API key with billing enabled.',
+    apiKeyDesc: 'To use the advanced Gemini 3 Pro (Nano Banana) model, you must provide a valid Google Cloud API key.',
     connectKey: 'Connect API Key',
-    readBilling: 'Read about Gemini API billing',
+    readBilling: 'Get an API Key here',
     model: 'Model',
-    switchKey: 'Switch Key',
+    switchKey: 'Change Key',
     importImages: '1. Import Images',
     uploadText: 'Upload Product Images',
     uploadSubText: 'Drag & drop multiple files or folders',
@@ -107,15 +111,19 @@ export const translations: Record<Language, Record<TranslationKey, string>> = {
     light: 'Light',
     dark: 'Dark',
     apiKeyInvalid: 'Your API key is invalid or expired.',
+    enterApiKey: 'Enter your Gemini API Key',
+    saveKey: 'Save API Key',
+    apiKeyPlaceholder: 'Paste your API Key here (starts with AIza...)',
+    apiKeyNote: 'Your key is stored locally in your browser.'
   },
   vi: {
     appTitle: 'VP GEN IMAGE',
     batchEditor: 'Trình chỉnh sửa hàng loạt',
     loading: 'Đang tải...',
     apiKeyMissing: 'VP GEN IMAGE',
-    apiKeyDesc: 'Để sử dụng mô hình Gemini 3 Pro (Nano Banana) nâng cao, bạn cần kết nối API Key Google Cloud hợp lệ đã bật thanh toán.',
+    apiKeyDesc: 'Để sử dụng mô hình Gemini 3 Pro (Nano Banana) nâng cao, bạn cần cung cấp Google Cloud API Key hợp lệ.',
     connectKey: 'Kết nối API Key',
-    readBilling: 'Đọc về thanh toán Gemini API',
+    readBilling: 'Lấy API Key tại đây',
     model: 'Mô hình',
     switchKey: 'Đổi Key',
     importImages: '1. Nhập Hình ảnh',
@@ -160,5 +168,9 @@ export const translations: Record<Language, Record<TranslationKey, string>> = {
     light: 'Sáng',
     dark: 'Tối',
     apiKeyInvalid: 'API key của bạn không hợp lệ hoặc đã hết hạn.',
+    enterApiKey: 'Nhập Gemini API Key',
+    saveKey: 'Lưu API Key',
+    apiKeyPlaceholder: 'Dán API Key vào đây (bắt đầu bằng AIza...)',
+    apiKeyNote: 'Key của bạn được lưu cục bộ trên trình duyệt.'
   }
 };
