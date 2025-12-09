@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { editImageWithGemini } from './services/geminiService';
 import { AppStatus, QueueItem, Prompt, AppSettings, Resolution, Theme, Language } from './types';
-import { UploadIcon, MagicIcon, DownloadIcon, AlertIcon, RefreshIcon, SettingsIcon, SunIcon, MoonIcon, CheckIcon, ClockIcon, HelpCircleIcon } from './components/Icons';
+import { UploadIcon, MagicIcon, DownloadIcon, AlertIcon, RefreshIcon, SettingsIcon, SunIcon, MoonIcon, CheckIcon, ClockIcon, HelpCircleIcon, XIcon } from './components/Icons';
 import { LoadingOverlay } from './components/LoadingOverlay';
 import { PromptManager } from './components/PromptManager';
 import { Drawer, ViewType } from './components/Drawer';
@@ -157,6 +157,9 @@ function App() {
 
   // 2. Persist Settings & Apply Theme
   useEffect(() => {
+    // SECURITY: Do not save full settings if they contain very large base64 strings unnecessarily, 
+    // but here we persist the logo as requested by user functionality.
+    // When "Disconnecting", we must clear this.
     localStorage.setItem('gemini_settings', JSON.stringify(settings));
     
     // Apply theme class to HTML element
@@ -191,7 +194,14 @@ function App() {
         setStoredApiKey(savedKey);
         setHasApiKey(true);
       } else {
-        setHasApiKey(false);
+        // SECURITY: Only fall back to process.env.API_KEY if strictly needed.
+        // In a public source code scenario, we assume the user might NOT want to bake the key in.
+        // However, we respect it if present for dev convenience.
+        if (process.env.API_KEY) {
+           setHasApiKey(true);
+        } else {
+           setHasApiKey(false);
+        }
       }
 
     } catch (e) {
@@ -216,16 +226,33 @@ function App() {
 
   const handleSaveManualKey = () => {
     if (!manualKeyInput.trim()) return;
-    localStorage.setItem('gemini_api_key', manualKeyInput.trim());
-    setStoredApiKey(manualKeyInput.trim());
+    const cleanKey = manualKeyInput.trim();
+    localStorage.setItem('gemini_api_key', cleanKey);
+    setStoredApiKey(cleanKey);
     setHasApiKey(true);
     setErrorMsg(null);
+    setManualKeyInput(''); // Clear input from memory
   };
 
-  const handleClearKey = () => {
+  // SECURITY: Secure Logout / Disconnect
+  const handleSecureDisconnect = () => {
+    // 1. Clear API Key
     setHasApiKey(false);
     setStoredApiKey(null);
     localStorage.removeItem('gemini_api_key');
+
+    // 2. Clear Sensitive Settings (Saved Logo)
+    // We keep theme and language, but remove the logo which might be private.
+    const safeSettings = { ...settings, savedLogo: null, savedLogoMime: undefined };
+    setSettings(safeSettings);
+    localStorage.setItem('gemini_settings', JSON.stringify(safeSettings));
+    if (logoInputRef.current) logoInputRef.current.value = '';
+
+    // 3. Clear Queue (Images)
+    setQueue([]);
+    setSelectedId(null);
+    
+    // 4. Reset Prompt selection if needed, but we keep the prompts themselves as they might be work-in-progress.
   };
 
   // Helper to read file as base64
@@ -347,9 +374,7 @@ function App() {
         setQueue(prev => prev.map(i => i.id === id ? { ...i, status: 'success', resultPreview: resultImage } : i));
       } catch (err: any) {
         if (err.message === "API_KEY_INVALID") {
-            setHasApiKey(false);
-            setStoredApiKey(null); // Clear invalid key
-            localStorage.removeItem('gemini_api_key');
+            handleSecureDisconnect(); // Reset state if key is invalid
             setErrorMsg(t.apiKeyInvalid);
             setIsProcessing(false);
             return;
@@ -449,6 +474,7 @@ function App() {
                     onChange={(e) => setManualKeyInput(e.target.value)}
                     className="w-full bg-background border border-border rounded-lg px-4 py-3 text-foreground focus:ring-2 focus:ring-primary/50 focus:border-primary focus:outline-none"
                     placeholder={t.apiKeyPlaceholder}
+                    autoComplete="off"
                   />
                 </div>
                 <button 
@@ -552,13 +578,14 @@ function App() {
                 {settings.theme === 'light' ? <MoonIcon /> : <SunIcon />}
               </button>
 
-              {/* API Key */}
+              {/* API Key / Logout */}
               <button 
-                onClick={handleClearKey}
-                className="text-xs text-secondary hover:text-foreground border border-border px-3 py-1.5 rounded-full hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
-                title={t.switchKey}
+                onClick={handleSecureDisconnect}
+                className="text-xs text-red-500 hover:text-red-600 bg-red-500/5 hover:bg-red-500/10 border border-red-500/20 px-3 py-1.5 rounded-full transition-colors flex items-center gap-1.5"
+                title="Secure Disconnect & Clear Data"
               >
-                Key
+                <XIcon /> 
+                <span className="hidden sm:inline">{t.switchKey}</span>
               </button>
             </div>
           </div>
@@ -878,7 +905,7 @@ function App() {
                                           <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-lg">
                                               <div className="bg-red-500/10 border border-red-500/50 p-4 rounded-xl text-red-200 text-center max-w-sm">
                                                   <p className="font-bold mb-1">{t.error}</p>
-                                                  <p className="text-sm">{activeItem.error}</p>
+                                                  <p className="text-sm truncate">{activeItem.error}</p>
                                                   <button 
                                                       onClick={() => handleRegenerate(activeItem.id)}
                                                       className="mt-3 px-4 py-2 bg-red-500/20 hover:bg-red-500/30 rounded-lg text-xs font-medium transition-colors w-full"

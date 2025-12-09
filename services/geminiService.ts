@@ -14,9 +14,17 @@ interface EditImageParams {
   apiKey?: string | null; // Allow passing explicit key
 }
 
+// Helper to strip sensitive info like API keys from error messages
+const sanitizeError = (error: any): string => {
+  const msg = error?.message || String(error);
+  // Regex to hide potential API key patterns (starts with AIza and is approx 39 chars)
+  return msg.replace(/AIza[0-9A-Za-z-_]{35}/g, '***HIDDEN_KEY***');
+};
+
 export const editImageWithGemini = async ({ base64Image, mimeType, prompt, logoBase64, logoMimeType, imageSize, apiKey }: EditImageParams): Promise<string> => {
   try {
-    // Prioritize the passed apiKey, fallback to process.env (for AI Studio context)
+    // SECURITY: Prioritize the manually entered apiKey.
+    // In Production, it is recommended NOT to rely on process.env.API_KEY to avoid accidental leakage in public builds.
     const finalApiKey = apiKey || process.env.API_KEY;
 
     if (!finalApiKey) {
@@ -96,7 +104,7 @@ export const editImageWithGemini = async ({ base64Image, mimeType, prompt, logoB
         const isInternalError = e.code === 500 || e.status === 500 || e.message?.includes('Internal error') || e.status === 'INTERNAL';
         
         if (isInternalError && attempts < maxAttempts) {
-           console.warn(`Gemini API 500 Error (Attempt ${attempts}/${maxAttempts}). Retrying in 1.5s...`);
+           console.warn(`Gemini API 500 Error (Attempt ${attempts}/${maxAttempts}). Retrying...`);
            await new Promise(r => setTimeout(r, 1500));
            continue;
         }
@@ -107,11 +115,15 @@ export const editImageWithGemini = async ({ base64Image, mimeType, prompt, logoB
     throw new Error("Failed to generate image after retries.");
 
   } catch (error: any) {
-    console.error("Gemini Image Gen Error:", error);
+    // SECURITY: Sanitize error before logging or throwing
+    const safeErrorMsg = sanitizeError(error);
+    console.error("Gemini Image Gen Error:", safeErrorMsg);
+    
     // If the entity was not found or permission denied, it often means the key is invalid for this model
     if (error.message?.includes('Requested entity was not found') || error.status === 403 || error.status === 404) {
        throw new Error("API_KEY_INVALID");
     }
-    throw error;
+    
+    throw new Error(safeErrorMsg);
   }
 };
