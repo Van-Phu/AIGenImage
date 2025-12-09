@@ -1,0 +1,114 @@
+import { GoogleGenAI } from "@google/genai";
+
+// Using the correct model for high-quality image editing/generation as per instructions
+// "nano banana pro" or "gemini pro image" maps to 'gemini-3-pro-image-preview'
+const MODEL_NAME = 'gemini-3-pro-image-preview';
+
+interface EditImageParams {
+  base64Image: string;
+  mimeType: string;
+  prompt: string;
+  logoBase64?: string | null;
+  logoMimeType?: string;
+  imageSize: string; // '1K' | '2K' | '4K'
+}
+
+export const editImageWithGemini = async ({ base64Image, mimeType, prompt, logoBase64, logoMimeType, imageSize }: EditImageParams): Promise<string> => {
+  try {
+    // CRITICAL: Always create a new instance right before making the call.
+    // This ensures we use the most up-to-date API key selected by the user via window.aistudio.openSelectKey()
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+
+    if (!process.env.API_KEY) {
+      throw new Error("API Key is missing. Please connect your API key first.");
+    }
+
+    // Prepare the parts
+    // Clean the base64 string if it contains the header (e.g., "data:image/png;base64,")
+    const cleanBase64 = base64Image.split(',')[1] || base64Image;
+
+    const parts: any[] = [
+      {
+        inlineData: {
+          data: cleanBase64,
+          mimeType: mimeType,
+        },
+      }
+    ];
+
+    // If a logo is provided, add it as the second image part
+    if (logoBase64 && logoMimeType) {
+      const cleanLogo = logoBase64.split(',')[1] || logoBase64;
+      parts.push({
+        inlineData: {
+          data: cleanLogo,
+          mimeType: logoMimeType,
+        }
+      });
+    }
+
+    // Add the text prompt
+    // We add a preamble to ensure the model understands the role of the images if a logo is present.
+    let finalPrompt = prompt;
+    if (logoBase64) {
+      finalPrompt = `Image 1 is the Original Design. Image 2 is the New Logo.\n\n${prompt}`;
+    }
+
+    parts.push({
+      text: finalPrompt,
+    });
+
+    let attempts = 0;
+    const maxAttempts = 3;
+
+    while (attempts < maxAttempts) {
+      try {
+        const response = await ai.models.generateContent({
+          model: MODEL_NAME,
+          contents: {
+            parts: parts,
+          },
+          config: {
+            imageConfig: {
+              imageSize: imageSize, 
+              aspectRatio: "1:1"
+            }
+          },
+        });
+
+        // Iterate through parts to find the image output
+        if (response.candidates && response.candidates[0].content && response.candidates[0].content.parts) {
+          for (const part of response.candidates[0].content.parts) {
+            if (part.inlineData && part.inlineData.data) {
+              // Construct the data URL
+              return `data:image/png;base64,${part.inlineData.data}`;
+            }
+          }
+        }
+        
+        throw new Error("No image data found in the response.");
+
+      } catch (e: any) {
+        attempts++;
+        const isInternalError = e.code === 500 || e.status === 500 || e.message?.includes('Internal error') || e.status === 'INTERNAL';
+        
+        if (isInternalError && attempts < maxAttempts) {
+           console.warn(`Gemini API 500 Error (Attempt ${attempts}/${maxAttempts}). Retrying in 1.5s...`);
+           await new Promise(r => setTimeout(r, 1500));
+           continue;
+        }
+        throw e;
+      }
+    }
+    
+    throw new Error("Failed to generate image after retries.");
+
+  } catch (error: any) {
+    console.error("Gemini Image Gen Error:", error);
+    // If the entity was not found or permission denied, it often means the key is invalid for this model
+    if (error.message?.includes('Requested entity was not found') || error.status === 403 || error.status === 404) {
+       throw new Error("API_KEY_INVALID");
+    }
+    throw error;
+  }
+};

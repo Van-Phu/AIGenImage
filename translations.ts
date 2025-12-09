@@ -1,0 +1,164 @@
+
+import { Language } from './types';
+
+type TranslationKey = 
+  | 'appTitle'
+  | 'batchEditor'
+  | 'loading'
+  | 'apiKeyMissing'
+  | 'apiKeyDesc'
+  | 'connectKey'
+  | 'readBilling'
+  | 'model'
+  | 'switchKey'
+  | 'importImages'
+  | 'uploadText'
+  | 'uploadSubText'
+  | 'dropMore'
+  | 'newLogo'
+  | 'logoSubText'
+  | 'logoUploaded'
+  | 'clickUpload'
+  | 'remove'
+  | 'promptSettings'
+  | 'manage'
+  | 'queue'
+  | 'clearAll'
+  | 'noImages'
+  | 'processing'
+  | 'generateAll'
+  | 'download'
+  | 'regenerate'
+  | 'noImageSelected'
+  | 'selectToView'
+  | 'originalInput'
+  | 'generatedResult'
+  | 'error'
+  | 'tryAgain'
+  | 'promptManager'
+  | 'newPrompt'
+  | 'promptName'
+  | 'promptContent'
+  | 'unsavedChanges'
+  | 'allSaved'
+  | 'reset'
+  | 'saveChanges'
+  | 'deletePromptConfirm'
+  | 'discardChanges'
+  | 'minOnePrompt'
+  | 'settings'
+  | 'theme'
+  | 'language'
+  | 'resolution'
+  | 'light'
+  | 'dark'
+  | 'apiKeyInvalid';
+
+export const translations: Record<Language, Record<TranslationKey, string>> = {
+  en: {
+    appTitle: 'VP GEN IMAGE',
+    batchEditor: 'Batch Editor',
+    loading: 'Loading...',
+    apiKeyMissing: 'VP GEN IMAGE',
+    apiKeyDesc: 'To use the advanced Gemini 3 Pro (Nano Banana) model for image editing, you must connect a valid Google Cloud API key with billing enabled.',
+    connectKey: 'Connect API Key',
+    readBilling: 'Read about Gemini API billing',
+    model: 'Model',
+    switchKey: 'Switch Key',
+    importImages: '1. Import Images',
+    uploadText: 'Upload Product Images',
+    uploadSubText: 'Drag & drop multiple files or folders',
+    dropMore: 'Drop more files here',
+    newLogo: '2. New Logo',
+    logoSubText: '(Replaces header logo)',
+    logoUploaded: 'Logo uploaded',
+    clickUpload: 'Click to upload logo',
+    remove: 'Remove',
+    promptSettings: '3. Prompt Settings',
+    manage: 'Manage',
+    queue: 'Queue',
+    clearAll: 'Clear All',
+    noImages: 'No images in queue',
+    processing: 'Processing...',
+    generateAll: 'Generate All',
+    download: 'Download',
+    regenerate: 'Regenerate',
+    noImageSelected: 'No image selected',
+    selectToView: 'Select an image from the queue to view',
+    originalInput: 'Original Input',
+    generatedResult: 'Generated Result',
+    error: 'Error',
+    tryAgain: 'Try Again',
+    promptManager: 'Prompt Manager',
+    newPrompt: 'New Prompt',
+    promptName: 'Prompt Name',
+    promptContent: 'Prompt Content (System Instruction)',
+    unsavedChanges: 'Unsaved changes',
+    allSaved: 'All changes saved',
+    reset: 'Reset',
+    saveChanges: 'Save Changes',
+    deletePromptConfirm: 'Are you sure you want to delete this prompt?',
+    discardChanges: 'You have unsaved changes. Discard them?',
+    minOnePrompt: 'You must have at least one prompt.',
+    settings: '4. System Settings',
+    theme: 'Theme',
+    language: 'Language',
+    resolution: 'Image Resolution',
+    light: 'Light',
+    dark: 'Dark',
+    apiKeyInvalid: 'Your API key is invalid or expired.',
+  },
+  vi: {
+    appTitle: 'VP GEN IMAGE',
+    batchEditor: 'Trình chỉnh sửa hàng loạt',
+    loading: 'Đang tải...',
+    apiKeyMissing: 'VP GEN IMAGE',
+    apiKeyDesc: 'Để sử dụng mô hình Gemini 3 Pro (Nano Banana) nâng cao, bạn cần kết nối API Key Google Cloud hợp lệ đã bật thanh toán.',
+    connectKey: 'Kết nối API Key',
+    readBilling: 'Đọc về thanh toán Gemini API',
+    model: 'Mô hình',
+    switchKey: 'Đổi Key',
+    importImages: '1. Nhập Hình ảnh',
+    uploadText: 'Tải ảnh sản phẩm lên',
+    uploadSubText: 'Kéo thả nhiều tập tin hoặc thư mục',
+    dropMore: 'Thả thêm tập tin vào đây',
+    newLogo: '2. Logo Mới',
+    logoSubText: '(Thay thế logo trên header)',
+    logoUploaded: 'Đã tải logo',
+    clickUpload: 'Nhấn để tải logo',
+    remove: 'Xóa',
+    promptSettings: '3. Cấu hình Prompt',
+    manage: 'Quản lý',
+    queue: 'Danh sách chờ',
+    clearAll: 'Xóa tất cả',
+    noImages: 'Chưa có ảnh nào',
+    processing: 'Đang xử lý...',
+    generateAll: 'Tạo ảnh hàng loạt',
+    download: 'Tải xuống',
+    regenerate: 'Tạo lại',
+    noImageSelected: 'Chưa chọn ảnh',
+    selectToView: 'Chọn một ảnh từ danh sách để xem',
+    originalInput: 'Ảnh gốc',
+    generatedResult: 'Kết quả',
+    error: 'Lỗi',
+    tryAgain: 'Thử lại',
+    promptManager: 'Quản lý Prompt',
+    newPrompt: 'Thêm Prompt',
+    promptName: 'Tên Prompt',
+    promptContent: 'Nội dung Prompt (Hướng dẫn hệ thống)',
+    unsavedChanges: 'Chưa lưu thay đổi',
+    allSaved: 'Đã lưu thay đổi',
+    reset: 'Đặt lại',
+    saveChanges: 'Lưu thay đổi',
+    deletePromptConfirm: 'Bạn có chắc chắn muốn xóa prompt này?',
+    discardChanges: 'Bạn có thay đổi chưa lưu. Hủy bỏ chúng?',
+    minOnePrompt: 'Bạn phải giữ ít nhất một prompt.',
+    settings: '4. Độ phân giải',
+    theme: 'Giao diện',
+    language: 'Ngôn ngữ',
+    resolution: 'Độ phân giải ảnh',
+    light: 'Sáng',
+    dark: 'Tối',
+    apiKeyInvalid: 'API key của bạn không hợp lệ hoặc đã hết hạn.',
+  }
+};

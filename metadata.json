@@ -1,0 +1,5 @@
+{
+  "name": "GeminiLens Pro",
+  "description": "A professional image editing workspace powered by Gemini 3 Pro (Nano Banana Pro). Upload an image and describe changes to transform it instantly.",
+  "requestFramePermissions": []
+}
