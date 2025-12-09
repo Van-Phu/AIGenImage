@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { editImageWithGemini } from './services/geminiService';
 import { AppStatus, QueueItem, Prompt, AppSettings, Resolution, Theme, Language } from './types';
-import { UploadIcon, MagicIcon, DownloadIcon, AlertIcon, RefreshIcon, SettingsIcon, SunIcon, MoonIcon, CheckIcon, ClockIcon, HelpCircleIcon, XIcon } from './components/Icons';
+import { UploadIcon, MagicIcon, DownloadIcon, AlertIcon, RefreshIcon, SettingsIcon, SunIcon, MoonIcon, CheckIcon, ClockIcon, HelpCircleIcon, XIcon, StopIcon } from './components/Icons';
 import { LoadingOverlay } from './components/LoadingOverlay';
 import { PromptManager } from './components/PromptManager';
 import { Drawer, ViewType } from './components/Drawer';
@@ -87,11 +87,90 @@ Không dịch chuyển bất kỳ thành phần nào
 
 Nền phẳng đều, không còn khung trắng`;
 
+const DEFAULT_PROMPT_CONTENT_2 = `1. Giữ nguyên bố cục
+
+Không thay đổi: bố cục, vị trí sản phẩm, text, icon, khoảng cách, layout tổng thể.
+
+Chỉ chỉnh sửa theo đúng các yêu cầu bên dưới.
+
+2. Màu background chuẩn
+
+Background phải là một màu phẳng (solid color), không bóng, không noise, không gradient, không đổi sáng.
+
+Màu chính xác: #f0f0f0.
+
+Bao phủ 100% toàn bộ vùng nền.
+
+3. Thay thế logo header
+
+Thay logo cũ bằng logo mới tôi cung cấp.
+
+Giữ đúng vị trí cũ 100%.
+
+Resize sao cho bằng đúng kích thước hiển thị của logo cũ.
+
+Không làm méo logo – giữ nguyên tỉ lệ gốc.
+
+Không thay đổi bất kỳ thông tin gì ở logo mới.
+
+Không làm vở hình ảnh logo mới.
+
+4. Quy định về font chữ
+
+Tất cả văn bản sử dụng Plus Jakarta Sans.
+
+Tiêu đề sản phẩm:
+
+Màu chữ: #32352f
+
+Không đổ bóng
+
+Không có viền
+
+Icon và text mô tả:
+
+Màu chữ: #32352f
+
+Không thêm bất cứ thứ gì
+
+5. Các thành phần khác
+
+Không thay đổi:
+
+kích thước sản phẩm
+
+vị trí icon
+
+text mô tả
+
+layout 3 bullet
+
+bố cục tổng thể
+
+Chỉ chỉnh logo + font + màu + background.
+
+6. Kết quả cuối cùng
+
+Ảnh kích thước 1024 × 1024 px.
+
+Nền #f0f0f0 đúng 100%, không sai tông.
+
+Tiêu đề đậm, màu #026415 có viền trắng.
+
+Icon + mô tả màu #32352f.
+
+Logo mới được thay đúng kích thước & tỉ lệ như logo cũ.`;
+
 const DEFAULT_PROMPTS: Prompt[] = [
   {
     id: 'default',
-    name: 'Standard Layout (Default)',
+    name: 'Layout 1 (Full Details)',
     content: DEFAULT_PROMPT_CONTENT
+  },
+  {
+    id: 'default_2',
+    name: 'Layout 2 (Alternative)',
+    content: DEFAULT_PROMPT_CONTENT_2
   }
 ];
 
@@ -139,10 +218,13 @@ function App() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  // Separate state for "Saving" vs "Processing AI" to show correct UI
+  const [isSaving, setIsSaving] = useState<boolean>(false);
 
   // Refs
   const fileInputRef = useRef<HTMLInputElement>(null);
   const logoInputRef = useRef<HTMLInputElement>(null);
+  const stopProcessingRef = useRef<boolean>(false);
 
   // Derived Values
   const t = translations[settings.language];
@@ -333,9 +415,14 @@ function App() {
     handleFiles(e.dataTransfer.files);
   };
 
+  // Stop Generation
+  const handleStop = () => {
+    stopProcessingRef.current = true;
+  };
+
   // Process Queue
   const processQueue = async () => {
-    if (isProcessing) return;
+    if (isProcessing || isSaving) return;
 
     const activePrompt = prompts.find(p => p.id === settings.activePromptId);
     if (!activePrompt) {
@@ -344,6 +431,7 @@ function App() {
     }
 
     setIsProcessing(true);
+    stopProcessingRef.current = false;
     setErrorMsg(null);
 
     const pendingIds = queue.filter(item => item.status === 'pending').map(item => item.id);
@@ -354,6 +442,12 @@ function App() {
     }
 
     for (const id of pendingIds) {
+      // CHECK STOP SIGNAL
+      if (stopProcessingRef.current) {
+        setIsProcessing(false);
+        return;
+      }
+
       setSelectedId(id);
       setQueue(prev => prev.map(i => i.id === id ? { ...i, status: 'processing' } : i));
 
@@ -406,27 +500,90 @@ function App() {
     setSelectedId(null);
   };
 
+  // Get sanitized filename with _edited suffix
+  const getEditedFilename = (originalName: string) => {
+    const lastDotIndex = originalName.lastIndexOf('.');
+    let baseName = originalName;
+    if (lastDotIndex !== -1) {
+       baseName = originalName.substring(0, lastDotIndex);
+    }
+    return `${baseName}_edited.png`;
+  };
+
   const handleDownload = () => {
     const activeItem = queue.find(i => i.id === selectedId);
     if (activeItem && activeItem.resultPreview) {
       const link = document.createElement('a');
       link.href = activeItem.resultPreview;
-      link.download = activeItem.file.name;
+      link.download = getEditedFilename(activeItem.file.name);
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
     }
   };
 
+  // Improved Download All: Supports Directory Picker if available, falls back gracefully if running in iframe/restricted env
   const handleDownloadAll = async () => {
     const successItems = queue.filter(i => i.status === 'success' && i.resultPreview);
     if (successItems.length === 0) return;
 
+    let useDirectoryPicker = 'showDirectoryPicker' in window;
+    
+    if (useDirectoryPicker) {
+      try {
+        // 1. Ask user to pick a folder
+        // Note: This might throw a SecurityError if running in a cross-origin iframe (like some web editors)
+        const handle = await (window as any).showDirectoryPicker({
+          mode: 'readwrite',
+          startIn: 'downloads'
+        });
+
+        setIsSaving(true);
+        setErrorMsg(null);
+
+        // 2. Iterate and write
+        for (const item of successItems) {
+          if (!item.resultPreview) continue;
+
+          const newName = getEditedFilename(item.file.name);
+
+          try {
+            // Fetch blob from base64 string
+            const response = await fetch(item.resultPreview);
+            const blob = await response.blob();
+
+            // Write to file
+            const fileHandle = await handle.getFileHandle(newName, { create: true });
+            const writable = await fileHandle.createWritable();
+            await writable.write(blob);
+            await writable.close();
+          } catch (writeErr) {
+            console.error(`Failed to write ${newName}`, writeErr);
+          }
+        }
+        
+        setIsSaving(false);
+        alert(t.saveSuccess);
+        return; // Success, exit function
+
+      } catch (err: any) {
+        setIsSaving(false);
+        // If user cancelled, just stop
+        if (err.name === 'AbortError') {
+          return;
+        }
+        // If error is related to iframe/permissions (SecurityError), or anything else, fall through to fallback
+        console.warn("Directory picker unavailable or failed (likely iframe restriction), falling back to individual download.", err);
+      }
+    }
+
+    // Fallback: Standard individual download loop
+    // This runs if directory picker is not supported OR if it failed (e.g. inside iframe)
     for (const item of successItems) {
       if (item.resultPreview) {
         const link = document.createElement('a');
         link.href = item.resultPreview;
-        link.download = item.file.name;
+        link.download = getEditedFilename(item.file.name);
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
@@ -792,34 +949,41 @@ function App() {
                   {errorMsg && <div className="mb-2 text-xs text-red-500 dark:text-red-400">{errorMsg}</div>}
                   
                   <div className="flex gap-2">
-                    <button
-                        onClick={processQueue}
-                        disabled={pendingCount === 0 || isProcessing}
-                        className={`
-                        flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-lg font-medium transition-all duration-200
-                        ${(pendingCount === 0 || isProcessing) 
-                            ? 'bg-black/5 dark:bg-white/10 text-secondary cursor-not-allowed' 
-                            : 'bg-gradient-to-r from-primary to-accent hover:shadow-lg hover:shadow-primary/20 hover:scale-[1.02] text-white'}
-                        `}
-                    >
-                        {isProcessing ? (
-                        <span className="flex items-center gap-2 text-sm">{t.processing}</span>
-                        ) : (
-                        <>
-                            <MagicIcon />
-                            <span className="text-sm">{t.generateAll} ({pendingCount})</span>
-                        </>
-                        )}
-                    </button>
+                    {isProcessing ? (
+                        <button
+                          onClick={handleStop}
+                          className="flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-lg font-medium transition-all duration-200 bg-red-500 hover:bg-red-600 text-white shadow-lg shadow-red-500/20"
+                        >
+                          <StopIcon />
+                          <span className="text-sm">{t.stop}</span>
+                        </button>
+                    ) : (
+                        <button
+                          onClick={processQueue}
+                          disabled={pendingCount === 0 || isSaving}
+                          className={`
+                          flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-lg font-medium transition-all duration-200
+                          ${(pendingCount === 0 || isSaving) 
+                              ? 'bg-black/5 dark:bg-white/10 text-secondary cursor-not-allowed' 
+                              : 'bg-gradient-to-r from-primary to-accent hover:shadow-lg hover:shadow-primary/20 hover:scale-[1.02] text-white'}
+                          `}
+                        >
+                          <MagicIcon />
+                          <span className="text-sm">{t.generateAll} ({pendingCount})</span>
+                        </button>
+                    )}
                     
                     {successCount > 0 && !isProcessing && (
                       <button
                           onClick={handleDownloadAll}
-                          className="flex items-center justify-center gap-2 px-4 py-3 rounded-lg font-medium bg-black/5 dark:bg-white/10 hover:bg-black/10 dark:hover:bg-white/20 text-foreground transition-all duration-200"
+                          disabled={isSaving}
+                          className={`flex items-center justify-center gap-2 px-4 py-3 rounded-lg font-medium transition-all duration-200
+                             ${isSaving ? 'bg-black/5 dark:bg-white/10 text-secondary cursor-wait' : 'bg-black/5 dark:bg-white/10 hover:bg-black/10 dark:hover:bg-white/20 text-foreground'}
+                          `}
                           title={t.download}
                       >
                           <DownloadIcon />
-                          <span className="sr-only sm:not-sr-only text-sm">{t.download} ({successCount})</span>
+                          <span className="sr-only sm:not-sr-only text-sm">{isSaving ? t.saving : t.download} ({successCount})</span>
                       </button>
                     )}
                   </div>

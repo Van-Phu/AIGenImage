@@ -60,7 +60,11 @@ type TranslationKey =
   | 'menuEditor'
   | 'menuHistory'
   | 'menuHelp'
-  | 'comingSoon';
+  | 'comingSoon'
+  | 'stop'
+  | 'stopping'
+  | 'saveSuccess'
+  | 'saving';
 
 export const translations: Record<Language, Record<TranslationKey, string>> = {
   en: {
@@ -123,6 +127,10 @@ export const translations: Record<Language, Record<TranslationKey, string>> = {
     menuHistory: 'History',
     menuHelp: 'Help & Docs',
     comingSoon: 'Feature coming soon',
+    stop: 'Stop Generation',
+    stopping: 'Stopping...',
+    saveSuccess: 'All images saved to folder successfully!',
+    saving: 'Saving...'
   },
   vi: {
     appTitle: 'VP GEN IMAGE',
@@ -184,5 +192,9 @@ export const translations: Record<Language, Record<TranslationKey, string>> = {
     menuHistory: 'Lịch sử',
     menuHelp: 'Trợ giúp',
     comingSoon: 'Tính năng đang phát triển',
+    stop: 'Dừng tạo ảnh',
+    stopping: 'Đang dừng...',
+    saveSuccess: 'Đã lưu tất cả ảnh vào thư mục thành công!',
+    saving: 'Đang lưu...'
   }
 };
