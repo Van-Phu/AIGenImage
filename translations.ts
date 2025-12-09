@@ -56,7 +56,11 @@ type TranslationKey =
   | 'enterApiKey'
   | 'saveKey'
   | 'apiKeyPlaceholder'
-  | 'apiKeyNote';
+  | 'apiKeyNote'
+  | 'menuEditor'
+  | 'menuHistory'
+  | 'menuHelp'
+  | 'comingSoon';
 
 export const translations: Record<Language, Record<TranslationKey, string>> = {
   en: {
@@ -114,7 +118,11 @@ export const translations: Record<Language, Record<TranslationKey, string>> = {
     enterApiKey: 'Enter your Gemini API Key',
     saveKey: 'Save API Key',
     apiKeyPlaceholder: 'Paste your API Key here (starts with AIza...)',
-    apiKeyNote: 'Your key is stored locally in your browser.'
+    apiKeyNote: 'Your key is stored locally in your browser.',
+    menuEditor: 'Editor',
+    menuHistory: 'History',
+    menuHelp: 'Help & Docs',
+    comingSoon: 'Feature coming soon',
   },
   vi: {
     appTitle: 'VP GEN IMAGE',
@@ -171,6 +179,10 @@ export const translations: Record<Language, Record<TranslationKey, string>> = {
     enterApiKey: 'Nhập Gemini API Key',
     saveKey: 'Lưu API Key',
     apiKeyPlaceholder: 'Dán API Key vào đây (bắt đầu bằng AIza...)',
-    apiKeyNote: 'Key của bạn được lưu cục bộ trên trình duyệt.'
+    apiKeyNote: 'Key của bạn được lưu cục bộ trên trình duyệt.',
+    menuEditor: 'Chỉnh sửa',
+    menuHistory: 'Lịch sử',
+    menuHelp: 'Trợ giúp',
+    comingSoon: 'Tính năng đang phát triển',
   }
 };
