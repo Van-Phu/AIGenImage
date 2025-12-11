@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { editImageWithGemini } from './services/geminiService';
 import { AppStatus, QueueItem, Prompt, AppSettings, Resolution, Theme, Language } from './types';
-import { UploadIcon, MagicIcon, DownloadIcon, AlertIcon, RefreshIcon, SettingsIcon, SunIcon, MoonIcon, CheckIcon, ClockIcon, HelpCircleIcon, XIcon, StopIcon } from './components/Icons';
+import { UploadIcon, MagicIcon, DownloadIcon, AlertIcon, RefreshIcon, SettingsIcon, SunIcon, MoonIcon, CheckIcon, ClockIcon, HelpCircleIcon, XIcon, StopIcon, LayoutIcon } from './components/Icons';
 import { LoadingOverlay } from './components/LoadingOverlay';
 import { PromptManager } from './components/PromptManager';
 import { Drawer, ViewType } from './components/Drawer';
@@ -161,16 +161,35 @@ Icon + mô tả màu #32352f.
 
 Logo mới được thay đúng kích thước & tỉ lệ như logo cũ.`;
 
+const DEFAULT_LAYOUT_PROMPT_CONTENT = `Bạn là một chuyên gia thiết kế đồ họa AI.
+
+NHIỆM VỤ:
+Tạo ra một hình ảnh sản phẩm chất lượng cao, thực tế (photorealistic) dựa trên bố cục (layout) thô mà tôi cung cấp.
+
+YÊU CẦU QUAN TRỌNG:
+1. BỐ CỤC TUYỆT ĐỐI: Giữ nguyên 100% vị trí các thành phần trong ảnh layout đầu vào. Text, hình ảnh sản phẩm, logo phải nằm chính xác vị trí cũ.
+2. PHONG CÁCH: Chuyển đổi các nét vẽ thô/layout thành hình ảnh thật, sắc nét, ánh sáng studio chuyên nghiệp.
+3. LOGO: Nếu có logo mới được cung cấp, hãy thay thế logo ở vị trí tương ứng trong layout.
+4. MÀU SẮC: Sử dụng tông màu chủ đạo tươi sáng, chuyên nghiệp phù hợp với thương mại điện tử.
+5. TEXT: Hiển thị văn bản rõ ràng, sắc nét.
+
+Đầu vào là ảnh 1 (Layout thô) và ảnh 2 (Logo mới - nếu có). Hãy kết hợp chúng để tạo ra ảnh sản phẩm hoàn thiện.`;
+
 const DEFAULT_PROMPTS: Prompt[] = [
   {
     id: 'default',
-    name: 'Layout 1 (Full Details)',
+    name: 'Editor: Layout 1 (Full Details)',
     content: DEFAULT_PROMPT_CONTENT
   },
   {
     id: 'default_2',
-    name: 'Layout 2 (Alternative)',
+    name: 'Editor: Layout 2 (Alternative)',
     content: DEFAULT_PROMPT_CONTENT_2
+  },
+  {
+    id: 'layout_gen',
+    name: 'Layout Gen: Standard Render',
+    content: DEFAULT_LAYOUT_PROMPT_CONTENT
   }
 ];
 
@@ -179,8 +198,12 @@ const DEFAULT_SETTINGS: AppSettings = {
   language: 'vi', // Default Vietnamese
   theme: 'light', // Default Light Mode
   resolution: '1K', // Default 1K
-  activePromptId: 'default'
+  activePromptId: 'default',
+  downloadWidth: undefined,
+  downloadHeight: undefined
 };
+
+const MAX_QUEUE_SIZE = 10;
 
 function App() {
   const [hasApiKey, setHasApiKey] = useState<boolean>(false);
@@ -347,6 +370,37 @@ function App() {
     });
   };
 
+  // Helper to resize image if dimensions are provided
+  const resizeImage = (base64Str: string, targetWidth?: number, targetHeight?: number): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      if (!targetWidth && !targetHeight) {
+        resolve(base64Str);
+        return;
+      }
+
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        // If one dimension is missing, maintain aspect ratio, otherwise use provided values
+        const finalWidth = targetWidth || (targetHeight ? (img.width * targetHeight) / img.height : img.width);
+        const finalHeight = targetHeight || (targetWidth ? (img.height * targetWidth) / img.width : img.height);
+        
+        canvas.width = finalWidth;
+        canvas.height = finalHeight;
+        
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.drawImage(img, 0, 0, finalWidth, finalHeight);
+          resolve(canvas.toDataURL('image/png'));
+        } else {
+          reject(new Error("Canvas context failed"));
+        }
+      };
+      img.onerror = reject;
+      img.src = base64Str;
+    });
+  };
+
   // Update specific setting helper
   const updateSetting = <K extends keyof AppSettings>(key: K, value: AppSettings[K]) => {
     setSettings(prev => ({ ...prev, [key]: value }));
@@ -355,6 +409,12 @@ function App() {
   // Handle Main Image Upload (Multiple)
   const handleFiles = async (files: FileList | null) => {
     if (!files || files.length === 0) return;
+
+    // Check Limit 10 images
+    if (queue.length + files.length > MAX_QUEUE_SIZE) {
+      alert(t.maxImagesWarning);
+      return;
+    }
 
     const newItems: QueueItem[] = [];
     
@@ -454,6 +514,9 @@ function App() {
       const itemData = queue.find(q => q.id === id); 
       if (!itemData) continue;
 
+      // START TIMER
+      const startTime = Date.now();
+
       try {
         const resultImage = await editImageWithGemini({
           base64Image: itemData.originalPreview,
@@ -465,7 +528,17 @@ function App() {
           apiKey: storedApiKey // Pass the stored key manually if it exists
         });
 
-        setQueue(prev => prev.map(i => i.id === id ? { ...i, status: 'success', resultPreview: resultImage } : i));
+        // CALCULATE DURATION
+        const endTime = Date.now();
+        const durationInSeconds = (endTime - startTime) / 1000;
+
+        setQueue(prev => prev.map(i => i.id === id ? { 
+          ...i, 
+          status: 'success', 
+          resultPreview: resultImage,
+          duration: durationInSeconds 
+        } : i));
+
       } catch (err: any) {
         if (err.message === "API_KEY_INVALID") {
             handleSecureDisconnect(); // Reset state if key is invalid
@@ -483,7 +556,7 @@ function App() {
   };
 
   const handleRegenerate = (id: string) => {
-    setQueue(prev => prev.map(i => i.id === id ? { ...i, status: 'pending', resultPreview: undefined, error: undefined } : i));
+    setQueue(prev => prev.map(i => i.id === id ? { ...i, status: 'pending', resultPreview: undefined, error: undefined, duration: undefined } : i));
   };
 
   const handleDeleteItem = (id: string, e: React.MouseEvent) => {
@@ -510,11 +583,14 @@ function App() {
     return `${baseName}_edited.png`;
   };
 
-  const handleDownload = () => {
+  const handleDownload = async () => {
     const activeItem = queue.find(i => i.id === selectedId);
     if (activeItem && activeItem.resultPreview) {
+      // Process image (resize) before download
+      const processedImage = await resizeImage(activeItem.resultPreview, settings.downloadWidth, settings.downloadHeight);
+      
       const link = document.createElement('a');
-      link.href = activeItem.resultPreview;
+      link.href = processedImage;
       link.download = getEditedFilename(activeItem.file.name);
       document.body.appendChild(link);
       link.click();
@@ -548,8 +624,11 @@ function App() {
           const newName = getEditedFilename(item.file.name);
 
           try {
+            // Resize if needed
+            const processedImage = await resizeImage(item.resultPreview, settings.downloadWidth, settings.downloadHeight);
+            
             // Fetch blob from base64 string
-            const response = await fetch(item.resultPreview);
+            const response = await fetch(processedImage);
             const blob = await response.blob();
 
             // Write to file
@@ -581,8 +660,10 @@ function App() {
     // This runs if directory picker is not supported OR if it failed (e.g. inside iframe)
     for (const item of successItems) {
       if (item.resultPreview) {
+        const processedImage = await resizeImage(item.resultPreview, settings.downloadWidth, settings.downloadHeight);
+        
         const link = document.createElement('a');
-        link.href = item.resultPreview;
+        link.href = processedImage;
         link.download = getEditedFilename(item.file.name);
         document.body.appendChild(link);
         link.click();
@@ -598,13 +679,13 @@ function App() {
 
   // 1. Loading State
   if (isCheckingKey) {
-    return <div className="min-h-screen bg-background flex items-center justify-center text-foreground">{t.loading}</div>;
+    return <div className="h-screen bg-background flex items-center justify-center text-foreground">{t.loading}</div>;
   }
 
   // 2. API Key Landing
   if (!hasApiKey) {
     return (
-      <div className="min-h-screen bg-background flex flex-col items-center justify-center text-foreground px-4">
+      <div className="h-screen bg-background flex flex-col items-center justify-center text-foreground px-4">
         <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center mb-6 shadow-lg shadow-primary/20 text-white">
           <MagicIcon />
         </div>
@@ -670,13 +751,14 @@ function App() {
   }
 
   // 3. Main App UI with Drawer Layout
+  // FIXED: h-screen enables fixed layout within viewport
   return (
-    <div className="min-h-screen bg-background text-foreground selection:bg-primary/30 flex transition-colors duration-300 overflow-hidden">
+    <div className="h-screen bg-background text-foreground selection:bg-primary/30 flex transition-colors duration-300 overflow-hidden">
       
-      {/* Navigation Drawer */}
+      {/* Navigation Drawer - Fixed Height */}
       <Drawer currentView={currentView} onChangeView={setCurrentView} language={settings.language} />
 
-      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden h-full">
         
         <PromptManager 
           isOpen={showPromptManager} 
@@ -688,14 +770,15 @@ function App() {
           language={settings.language}
         />
 
-        {/* Header (Simplified since logo is in Drawer) */}
-        <header className="border-b border-border bg-surface/50 backdrop-blur-md sticky top-0 z-30 shrink-0">
+        {/* Header - Fixed Top */}
+        <header className="border-b border-border bg-surface/50 backdrop-blur-md shrink-0 z-30">
           <div className="max-w-full px-4 lg:px-6 h-16 flex items-center justify-between">
             
-            {/* Left: Title (Only visible if needed or on mobile if drawer is hidden, but drawer is visible here) */}
+            {/* Left: Title */}
             <div className="flex items-center gap-2">
               <h1 className="font-bold text-lg tracking-tight">
                 {currentView === 'editor' && t.batchEditor}
+                {currentView === 'layout' && t.layoutGenerator}
                 {currentView === 'history' && t.menuHistory}
                 {currentView === 'help' && t.menuHelp}
               </h1>
@@ -703,7 +786,7 @@ function App() {
 
             {/* Right: Controls */}
             <div className="flex items-center gap-3 sm:gap-4">
-              {/* Model Info (Hidden on mobile) */}
+              {/* Model Info */}
               <div className="hidden lg:block text-xs text-secondary font-mono bg-black/5 dark:bg-white/5 px-2 py-1 rounded">
                 {t.model}: gemini-3-pro-image-preview
               </div>
@@ -748,21 +831,24 @@ function App() {
           </div>
         </header>
 
-        {/* Content Area */}
-        <div className="flex-1 overflow-hidden relative">
+        {/* Content Area - Takes remaining height */}
+        <div className="flex-1 overflow-hidden relative h-full">
           
-          {/* View: Editor */}
-          {currentView === 'editor' && (
-            <div className="h-full flex flex-col lg:flex-row">
+          {/* View: Editor OR Layout (Shared Workspace) */}
+          {['editor', 'layout'].includes(currentView) ? (
+            <div className="h-full flex flex-col lg:flex-row overflow-hidden">
+              
               {/* Left Sidebar: Controls & Queue */}
-              <div className="w-full lg:w-[400px] bg-surface/50 border-r border-border flex flex-col h-full overflow-hidden shrink-0">
+              {/* FIXED: h-full and overflow-hidden ensures fixed sidebar within container */}
+              <div className="w-full lg:w-[400px] bg-surface/50 border-r border-border flex flex-col h-full overflow-hidden shrink-0 z-20">
                 
+                {/* Scrollable Content Area (Uploads, Settings, Queue) */}
                 <div className="p-4 flex-1 overflow-y-auto custom-scrollbar flex flex-col gap-6">
                   
                   {/* 1. Upload Section */}
                   <div>
                       <h2 className="text-sm font-semibold mb-3 flex items-center gap-2">
-                        {t.importImages} 
+                        {currentView === 'layout' ? t.importLayouts : t.importImages}
                         {queue.length > 0 && <span className="text-xs bg-black/10 dark:bg-white/10 px-2 py-0.5 rounded-full text-secondary">{queue.length}</span>}
                       </h2>
                       <div 
@@ -785,18 +871,23 @@ function App() {
                         />
                         <div className="text-center p-2">
                           <div className="w-8 h-8 rounded-full bg-black/5 dark:bg-white/5 flex items-center justify-center mx-auto mb-2 group-hover:scale-110 transition-transform text-foreground">
-                            <UploadIcon />
+                             {currentView === 'layout' ? <LayoutIcon /> : <UploadIcon />}
                           </div>
                           {queue.length === 0 ? (
                               <>
-                                  <p className="text-sm font-medium mb-1">{t.uploadText}</p>
-                                  <p className="text-xs text-secondary">{t.uploadSubText}</p>
+                                  <p className="text-sm font-medium mb-1">
+                                    {currentView === 'layout' ? t.uploadLayoutText : t.uploadText}
+                                  </p>
+                                  <p className="text-xs text-secondary">
+                                    {currentView === 'layout' ? t.uploadLayoutSubText : t.uploadSubText}
+                                  </p>
                               </>
                           ) : (
                               <p className="text-xs text-secondary">{t.dropMore}</p>
                           )}
                         </div>
                       </div>
+                      <p className="text-[10px] text-secondary mt-1 text-center">{t.maxImagesWarning}</p>
                   </div>
 
                   {/* 2. Logo Upload */}
@@ -859,36 +950,40 @@ function App() {
                     </div>
                   </div>
 
-                  {/* 4. Output Settings (Resolution) */}
+                  {/* 4. Settings (Resolution Only) */}
                   <div>
                     <h2 className="text-sm font-semibold mb-3">{t.settings}</h2>
-                    <div className="bg-surface border border-border rounded-xl p-2 flex flex-col gap-1">
-                      <label className="text-xs text-secondary uppercase font-semibold">{t.resolution}</label>
-                        <div className="flex bg-black/5 dark:bg-white/5 rounded-lg p-0.5">
-                          <button 
-                          onClick={() => updateSetting('resolution', '1K')}
-                          className={`flex-1 text-xs py-1.5 rounded-md transition-all ${settings.resolution === '1K' ? 'bg-background shadow text-foreground' : 'text-secondary hover:text-foreground'}`}
-                          >
-                            1K
-                          </button>
-                          <button 
-                          onClick={() => updateSetting('resolution', '2K')}
-                          className={`flex-1 text-xs py-1.5 rounded-md transition-all ${settings.resolution === '2K' ? 'bg-background shadow text-foreground' : 'text-secondary hover:text-foreground'}`}
-                          >
-                            2K
-                          </button>
-                          <button 
-                          onClick={() => updateSetting('resolution', '4K')}
-                          className={`flex-1 text-xs py-1.5 rounded-md transition-all ${settings.resolution === '4K' ? 'bg-background shadow text-foreground' : 'text-secondary hover:text-foreground'}`}
-                          >
-                            4K
-                          </button>
+                    <div className="bg-surface border border-border rounded-xl p-3 flex flex-col gap-3">
+                      
+                      {/* Gen Resolution */}
+                      <div>
+                        <label className="text-[10px] text-secondary uppercase font-semibold block mb-1.5">{t.resolution}</label>
+                          <div className="flex bg-black/5 dark:bg-white/5 rounded-lg p-0.5">
+                            <button 
+                            onClick={() => updateSetting('resolution', '1K')}
+                            className={`flex-1 text-xs py-1.5 rounded-md transition-all ${settings.resolution === '1K' ? 'bg-background shadow text-foreground' : 'text-secondary hover:text-foreground'}`}
+                            >
+                              1K
+                            </button>
+                            <button 
+                            onClick={() => updateSetting('resolution', '2K')}
+                            className={`flex-1 text-xs py-1.5 rounded-md transition-all ${settings.resolution === '2K' ? 'bg-background shadow text-foreground' : 'text-secondary hover:text-foreground'}`}
+                            >
+                              2K
+                            </button>
+                            <button 
+                            onClick={() => updateSetting('resolution', '4K')}
+                            className={`flex-1 text-xs py-1.5 rounded-md transition-all ${settings.resolution === '4K' ? 'bg-background shadow text-foreground' : 'text-secondary hover:text-foreground'}`}
+                            >
+                              4K
+                            </button>
+                        </div>
                       </div>
                     </div>
                   </div>
 
                   {/* Queue List */}
-                  <div className="flex-1 min-h-[150px] flex flex-col">
+                  <div className="flex-1 min-h-[150px] flex flex-col pb-4">
                       <div className="flex items-center justify-between mb-3">
                           <h2 className="text-sm font-semibold">{t.queue}</h2>
                           {queue.length > 0 && !isProcessing && (
@@ -914,7 +1009,14 @@ function App() {
                                       <img src={item.originalPreview} alt="thumb" className="w-10 h-10 rounded object-cover bg-black" />
                                       <div className="flex-1 min-w-0">
                                           <p className="text-xs text-foreground truncate font-medium">{item.file.name}</p>
-                                          <p className="text-[10px] text-secondary uppercase">{item.status}</p>
+                                          <div className="flex items-center gap-2">
+                                            <p className="text-[10px] text-secondary uppercase">{item.status}</p>
+                                            {item.duration && (
+                                              <span className="text-[10px] bg-black/10 dark:bg-white/10 px-1.5 rounded text-secondary font-mono">
+                                                {item.duration.toFixed(1)}s
+                                              </span>
+                                            )}
+                                          </div>
                                       </div>
                                       <div className="shrink-0 flex items-center gap-2">
                                           {item.status === 'processing' && <div className="w-4 h-4 rounded-full border-2 border-primary border-t-transparent animate-spin" />}
@@ -944,15 +1046,16 @@ function App() {
                   </div>
                 </div>
 
-                {/* Action Bar */}
-                <div className="p-4 border-t border-border bg-surface/50 backdrop-blur-md flex flex-col gap-2">
+                {/* Fixed Action Bar at the Bottom of Sidebar */}
+                <div className="p-4 border-t border-border bg-surface/80 backdrop-blur-md flex flex-col gap-2 shrink-0 z-10 shadow-[0_-5px_15px_-5px_rgba(0,0,0,0.1)]">
                   {errorMsg && <div className="mb-2 text-xs text-red-500 dark:text-red-400">{errorMsg}</div>}
                   
-                  <div className="flex gap-2">
+                  {/* GENERATION ACTION */}
+                  <div>
                     {isProcessing ? (
                         <button
                           onClick={handleStop}
-                          className="flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-lg font-medium transition-all duration-200 bg-red-500 hover:bg-red-600 text-white shadow-lg shadow-red-500/20"
+                          className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg font-medium transition-all duration-200 bg-red-500 hover:bg-red-600 text-white shadow-lg shadow-red-500/20"
                         >
                           <StopIcon />
                           <span className="text-sm">{t.stop}</span>
@@ -962,7 +1065,7 @@ function App() {
                           onClick={processQueue}
                           disabled={pendingCount === 0 || isSaving}
                           className={`
-                          flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-lg font-medium transition-all duration-200
+                          w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg font-medium transition-all duration-200
                           ${(pendingCount === 0 || isSaving) 
                               ? 'bg-black/5 dark:bg-white/10 text-secondary cursor-not-allowed' 
                               : 'bg-gradient-to-r from-primary to-accent hover:shadow-lg hover:shadow-primary/20 hover:scale-[1.02] text-white'}
@@ -972,20 +1075,50 @@ function App() {
                           <span className="text-sm">{t.generateAll} ({pendingCount})</span>
                         </button>
                     )}
-                    
-                    {successCount > 0 && !isProcessing && (
-                      <button
-                          onClick={handleDownloadAll}
-                          disabled={isSaving}
-                          className={`flex items-center justify-center gap-2 px-4 py-3 rounded-lg font-medium transition-all duration-200
-                             ${isSaving ? 'bg-black/5 dark:bg-white/10 text-secondary cursor-wait' : 'bg-black/5 dark:bg-white/10 hover:bg-black/10 dark:hover:bg-white/20 text-foreground'}
-                          `}
-                          title={t.download}
-                      >
-                          <DownloadIcon />
-                          <span className="sr-only sm:not-sr-only text-sm">{isSaving ? t.saving : t.download} ({successCount})</span>
-                      </button>
-                    )}
+                  </div>
+
+                  {/* DOWNLOAD ACTIONS (Separate Section) */}
+                  {/* Always Visible now, button disabled if no success items */}
+                  <div className="pt-3 border-t border-border/50 flex flex-col gap-2">
+                    {/* Download Size Inputs */}
+                    <div>
+                      <div className="flex items-center justify-between mb-1.5">
+                          <label className="text-[10px] text-secondary uppercase font-semibold">{t.downloadSettings}</label>
+                          <span className="text-[9px] text-secondary">{t.keepEmptyOriginal}</span>
+                      </div>
+                      <div className="flex gap-2 mb-2">
+                          <div className="flex-1">
+                            <input 
+                              type="number" 
+                              value={settings.downloadWidth || ''}
+                              onChange={(e) => updateSetting('downloadWidth', e.target.value ? Number(e.target.value) : undefined)}
+                              placeholder={t.widthPx}
+                              className="w-full bg-black/5 dark:bg-white/5 border border-transparent focus:border-primary/50 rounded-lg px-2 py-1.5 text-xs text-foreground focus:outline-none"
+                            />
+                          </div>
+                          <div className="flex-1">
+                            <input 
+                              type="number" 
+                              value={settings.downloadHeight || ''}
+                              onChange={(e) => updateSetting('downloadHeight', e.target.value ? Number(e.target.value) : undefined)}
+                              placeholder={t.heightPx}
+                              className="w-full bg-black/5 dark:bg-white/5 border border-transparent focus:border-primary/50 rounded-lg px-2 py-1.5 text-xs text-foreground focus:outline-none"
+                            />
+                          </div>
+                      </div>
+                    </div>
+
+                    <button
+                        onClick={handleDownloadAll}
+                        disabled={isSaving || successCount === 0}
+                        className={`w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg font-medium transition-all duration-200
+                            ${(isSaving || successCount === 0) ? 'bg-black/5 dark:bg-white/10 text-secondary cursor-not-allowed' : 'bg-black/5 dark:bg-white/10 hover:bg-black/10 dark:hover:bg-white/20 text-foreground'}
+                        `}
+                        title={t.download}
+                    >
+                        <DownloadIcon />
+                        <span className="text-sm">{isSaving ? t.saving : t.download} ({successCount})</span>
+                    </button>
                   </div>
                 </div>
               </div>
@@ -993,7 +1126,7 @@ function App() {
               {/* Right Area: Viewer */}
               <div className="flex-1 bg-background/50 dark:bg-black/40 flex flex-col overflow-hidden relative transition-colors">
                   {/* Top Bar of Viewer */}
-                  <div className="h-12 border-b border-border flex items-center justify-between px-6 bg-surface/20 backdrop-blur-sm">
+                  <div className="h-12 border-b border-border flex items-center justify-between px-6 bg-surface/20 backdrop-blur-sm shrink-0">
                       <span className="text-xs text-secondary truncate max-w-[300px]">
                           {activeItem ? activeItem.file.name : t.noImageSelected}
                       </span>
@@ -1022,7 +1155,7 @@ function App() {
                       {!activeItem ? (
                           <div className="text-center text-secondary">
                               <div className="w-16 h-16 mx-auto mb-4 border-2 border-dashed border-border rounded-2xl flex items-center justify-center">
-                                  <MagicIcon />
+                                  {currentView === 'layout' ? <LayoutIcon /> : <MagicIcon />}
                               </div>
                               <p>{t.selectToView}</p>
                           </div>
@@ -1035,10 +1168,11 @@ function App() {
                                       <img 
                                           src={activeItem.resultPreview} 
                                           alt="Result" 
-                                          className="max-w-full max-h-full object-contain shadow-2xl rounded-lg"
+                                          className="w-full h-full object-contain shadow-2xl rounded-lg bg-black/5 dark:bg-white/5"
                                       />
-                                      <div className="absolute bottom-4 right-4 bg-black/60 backdrop-blur px-3 py-1 rounded-full text-xs text-green-400 font-medium">
-                                          {t.generatedResult}
+                                      
+                                      <div className="absolute bottom-4 right-4 bg-black/60 backdrop-blur px-3 py-1 rounded-full text-xs text-green-400 font-medium pointer-events-none">
+                                          {t.generatedResult} {activeItem.duration && `(${activeItem.duration.toFixed(1)}s)`}
                                       </div>
                                       <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
                                           <button 
@@ -1055,13 +1189,14 @@ function App() {
                                       <img 
                                           src={activeItem.originalPreview} 
                                           alt="Original" 
-                                          className={`max-w-full max-h-full object-contain shadow-2xl rounded-lg ${activeItem.status === 'processing' ? 'opacity-50' : ''}`}
+                                          className={`w-full h-full object-contain shadow-2xl rounded-lg bg-black/5 dark:bg-white/5 ${activeItem.status === 'processing' ? 'opacity-50' : ''}`}
                                       />
-                                      <div className="absolute bottom-4 left-4 bg-black/60 backdrop-blur px-3 py-1 rounded-full text-xs text-white/90 font-medium">
+                                      
+                                      <div className="absolute bottom-4 left-4 bg-black/60 backdrop-blur px-3 py-1 rounded-full text-xs text-white/90 font-medium pointer-events-none">
                                           {t.originalInput}
                                       </div>
                                       {activeItem.status === 'processing' && (
-                                          <div className="absolute inset-0 flex items-center justify-center">
+                                          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                                               <LoadingOverlay />
                                           </div>
                                       )}
@@ -1086,10 +1221,8 @@ function App() {
                   </div>
               </div>
             </div>
-          )}
-
-          {/* Placeholders for Future Features */}
-          {currentView !== 'editor' && (
+          ) : (
+            // Placeholders for Future Features
             <div className="h-full flex flex-col items-center justify-center text-secondary p-8">
                <div className="w-24 h-24 mb-6 rounded-2xl bg-surface border-2 border-dashed border-border flex items-center justify-center">
                  {currentView === 'history' && <div className="scale-150"><ClockIcon /></div>}

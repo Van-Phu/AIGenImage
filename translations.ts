@@ -64,7 +64,17 @@ type TranslationKey =
   | 'stop'
   | 'stopping'
   | 'saveSuccess'
-  | 'saving';
+  | 'saving'
+  | 'maxImagesWarning'
+  | 'downloadSettings'
+  | 'widthPx'
+  | 'heightPx'
+  | 'keepEmptyOriginal'
+  | 'menuLayout'
+  | 'layoutGenerator'
+  | 'uploadLayoutText'
+  | 'uploadLayoutSubText'
+  | 'importLayouts';
 
 export const translations: Record<Language, Record<TranslationKey, string>> = {
   en: {
@@ -130,7 +140,17 @@ export const translations: Record<Language, Record<TranslationKey, string>> = {
     stop: 'Stop Generation',
     stopping: 'Stopping...',
     saveSuccess: 'All images saved to folder successfully!',
-    saving: 'Saving...'
+    saving: 'Saving...',
+    maxImagesWarning: 'Maximum 10 images allowed in the queue.',
+    downloadSettings: 'Download Size (Optional)',
+    widthPx: 'Width (px)',
+    heightPx: 'Height (px)',
+    keepEmptyOriginal: 'Leave empty for original size',
+    menuLayout: 'Layout Gen',
+    layoutGenerator: 'Layout Generator',
+    uploadLayoutText: 'Upload Layout Design',
+    uploadLayoutSubText: 'Upload your rough layout/sketch',
+    importLayouts: '1. Import Layouts'
   },
   vi: {
     appTitle: 'VP GEN IMAGE',
@@ -177,7 +197,7 @@ export const translations: Record<Language, Record<TranslationKey, string>> = {
     deletePromptConfirm: 'Bạn có chắc chắn muốn xóa prompt này?',
     discardChanges: 'Bạn có thay đổi chưa lưu. Hủy bỏ chúng?',
     minOnePrompt: 'Bạn phải giữ ít nhất một prompt.',
-    settings: '4. Độ phân giải',
+    settings: '4. Độ phân giải & Tải xuống',
     theme: 'Giao diện',
     language: 'Ngôn ngữ',
     resolution: 'Độ phân giải ảnh',
@@ -195,6 +215,16 @@ export const translations: Record<Language, Record<TranslationKey, string>> = {
     stop: 'Dừng tạo ảnh',
     stopping: 'Đang dừng...',
     saveSuccess: 'Đã lưu tất cả ảnh vào thư mục thành công!',
-    saving: 'Đang lưu...'
+    saving: 'Đang lưu...',
+    maxImagesWarning: 'Chỉ cho phép tối đa 10 ảnh trong danh sách chờ.',
+    downloadSettings: 'Kích thước tải xuống (Tùy chọn)',
+    widthPx: 'Rộng (px)',
+    heightPx: 'Cao (px)',
+    keepEmptyOriginal: 'Để trống để giữ kích thước gốc',
+    menuLayout: 'Tạo Layout',
+    layoutGenerator: 'Tạo ảnh từ Layout',
+    uploadLayoutText: 'Tải lên bản thiết kế',
+    uploadLayoutSubText: 'Tải ảnh layout thô hoặc bản phác thảo',
+    importLayouts: '1. Nhập Layout'
   }
 };

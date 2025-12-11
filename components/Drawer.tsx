@@ -1,9 +1,9 @@
 import React from 'react';
-import { GridIcon, ClockIcon, HelpCircleIcon, MagicIcon } from './Icons';
+import { GridIcon, ClockIcon, HelpCircleIcon, MagicIcon, LayoutIcon } from './Icons';
 import { Language } from '../types';
 import { translations } from '../translations';
 
-export type ViewType = 'editor' | 'history' | 'help';
+export type ViewType = 'editor' | 'layout' | 'history' | 'help';
 
 interface DrawerProps {
   currentView: ViewType;
@@ -16,6 +16,7 @@ export const Drawer: React.FC<DrawerProps> = ({ currentView, onChangeView, langu
 
   const menuItems: { id: ViewType; label: string; icon: React.ReactNode }[] = [
     { id: 'editor', label: t.menuEditor, icon: <GridIcon /> },
+    { id: 'layout', label: t.menuLayout, icon: <LayoutIcon /> },
     { id: 'history', label: t.menuHistory, icon: <ClockIcon /> },
     { id: 'help', label: t.menuHelp, icon: <HelpCircleIcon /> },
   ];

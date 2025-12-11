@@ -18,6 +18,7 @@ export interface QueueItem {
   status: 'pending' | 'processing' | 'success' | 'error';
   resultPreview?: string;
   error?: string;
+  duration?: number; // Duration in seconds
 }
 
 export interface Prompt {
@@ -37,6 +38,8 @@ export interface AppSettings {
   activePromptId: string;
   savedLogo?: string | null; // Base64 string
   savedLogoMime?: string;
+  downloadWidth?: number; // Cache user preference for width
+  downloadHeight?: number; // Cache user preference for height
 }
 
 export enum AppStatus {
