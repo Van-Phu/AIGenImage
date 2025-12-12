@@ -21,6 +21,8 @@ Không được căn giữa, không được căn chỉnh lại bố cục theo 
 
 2. Nền chuẩn #f0f0f0
 
+Không giữ lại nền cũ thay đổi nền mới hoàn toàn 100%
+
 Nền phải là solid color #f0f0f0.
 
 Không bóng, không noise, không gradient, không đổi sáng.
@@ -73,7 +75,7 @@ khoảng cách giữa các phần tử
 
 Kích thước ảnh 1024 × 1024 px
 
-Nền #f0f0f0 phủ 100%
+Không giữ lại nền cũ thay đổi nền mới hoàn toàn 100%, Nền #f0f0f0 phủ 100%
 
 Tiêu đề bold, #026415 có viền trắng
 
@@ -94,6 +96,8 @@ Không thay đổi: bố cục, vị trí sản phẩm, text, icon, khoảng cá
 Chỉ chỉnh sửa theo đúng các yêu cầu bên dưới.
 
 2. Màu background chuẩn
+
+Không giữ lại nền cũ thay đổi nền mới hoàn toàn 100%
 
 Background phải là một màu phẳng (solid color), không bóng, không noise, không gradient, không đổi sáng.
 
@@ -153,9 +157,9 @@ Chỉ chỉnh logo + font + màu + background.
 
 Ảnh kích thước 1024 × 1024 px.
 
-Nền #f0f0f0 đúng 100%, không sai tông.
+Không giữ lại nền cũ thay đổi nền mới hoàn toàn 100%,  Nền #f0f0f0 đúng 100%, không sai tông.
 
-Tiêu đề đậm, màu #026415 có viền trắng.
+Tiêu đề đậm, màu #32352f không viền, không đổ bóng.
 
 Icon + mô tả màu #32352f.
 
