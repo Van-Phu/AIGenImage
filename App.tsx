@@ -983,7 +983,7 @@ function App() {
                   </div>
 
                   {/* Queue List */}
-                  <div className="flex-1 min-h-[150px] flex flex-col pb-4">
+                  <div className="flex-1 min-h-[450px] flex flex-col pb-4">
                       <div className="flex items-center justify-between mb-3">
                           <h2 className="text-sm font-semibold">{t.queue}</h2>
                           {queue.length > 0 && !isProcessing && (
