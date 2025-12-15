@@ -204,7 +204,8 @@ const DEFAULT_SETTINGS: AppSettings = {
   resolution: '1K', // Default 1K
   activePromptId: 'default',
   downloadWidth: undefined,
-  downloadHeight: undefined
+  downloadHeight: undefined,
+  filenamePattern: '(\\d{8,14})' // Default pattern to look for barcodes (8-14 digits)
 };
 
 const MAX_QUEUE_SIZE = 10;
@@ -256,6 +257,7 @@ function App() {
   // Derived Values
   const t = translations[settings.language];
   const isAIStudio = (window as any).aistudio !== undefined;
+  const activeItem = queue.find(i => i.id === selectedId);
 
   // --- Effects ---
 
@@ -403,6 +405,23 @@ function App() {
       img.onerror = reject;
       img.src = base64Str;
     });
+  };
+
+  // Helper: Extract filename based on Regex
+  const extractFilename = (originalName: string, pattern?: string) => {
+    if (!pattern) return originalName.replace(/\.[^/.]+$/, "");
+    try {
+      const regex = new RegExp(pattern);
+      const match = originalName.match(regex);
+      // Use the first capture group if available, otherwise the full match
+      if (match && match.length > 0) {
+        return match[1] || match[0];
+      }
+    } catch (e) {
+      console.warn("Invalid Regex", e);
+    }
+    // Fallback: name without extension
+    return originalName.replace(/\.[^/.]+$/, "");
   };
 
   // Update specific setting helper
@@ -577,25 +596,18 @@ function App() {
     setSelectedId(null);
   };
 
-  // Get sanitized filename with _edited suffix
-  const getEditedFilename = (originalName: string) => {
-    const lastDotIndex = originalName.lastIndexOf('.');
-    let baseName = originalName;
-    if (lastDotIndex !== -1) {
-       baseName = originalName.substring(0, lastDotIndex);
-    }
-    return `${baseName}_edited.png`;
-  };
-
   const handleDownload = async () => {
     const activeItem = queue.find(i => i.id === selectedId);
     if (activeItem && activeItem.resultPreview) {
       // Process image (resize) before download
       const processedImage = await resizeImage(activeItem.resultPreview, settings.downloadWidth, settings.downloadHeight);
       
+      const extractedName = extractFilename(activeItem.file.name, settings.filenamePattern);
+      const finalName = `${extractedName} (1).png`;
+
       const link = document.createElement('a');
       link.href = processedImage;
-      link.download = getEditedFilename(activeItem.file.name);
+      link.download = finalName;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -607,12 +619,14 @@ function App() {
     const successItems = queue.filter(i => i.status === 'success' && i.resultPreview);
     if (successItems.length === 0) return;
 
+    // Track name duplicates for the batch (e.g. barcode (1), barcode (2))
+    const nameCounts = new Map<string, number>();
+
     let useDirectoryPicker = 'showDirectoryPicker' in window;
     
     if (useDirectoryPicker) {
       try {
         // 1. Ask user to pick a folder
-        // Note: This might throw a SecurityError if running in a cross-origin iframe (like some web editors)
         const handle = await (window as any).showDirectoryPicker({
           mode: 'readwrite',
           startIn: 'downloads'
@@ -625,7 +639,11 @@ function App() {
         for (const item of successItems) {
           if (!item.resultPreview) continue;
 
-          const newName = getEditedFilename(item.file.name);
+          // Calculate filename
+          const baseName = extractFilename(item.file.name, settings.filenamePattern);
+          const currentCount = (nameCounts.get(baseName) || 0) + 1;
+          nameCounts.set(baseName, currentCount);
+          const newName = `${baseName} (${currentCount}).png`;
 
           try {
             // Resize if needed
@@ -651,24 +669,25 @@ function App() {
 
       } catch (err: any) {
         setIsSaving(false);
-        // If user cancelled, just stop
-        if (err.name === 'AbortError') {
-          return;
-        }
-        // If error is related to iframe/permissions (SecurityError), or anything else, fall through to fallback
+        if (err.name === 'AbortError') return;
         console.warn("Directory picker unavailable or failed (likely iframe restriction), falling back to individual download.", err);
       }
     }
 
     // Fallback: Standard individual download loop
-    // This runs if directory picker is not supported OR if it failed (e.g. inside iframe)
     for (const item of successItems) {
       if (item.resultPreview) {
+        // Calculate filename
+        const baseName = extractFilename(item.file.name, settings.filenamePattern);
+        const currentCount = (nameCounts.get(baseName) || 0) + 1;
+        nameCounts.set(baseName, currentCount);
+        const newName = `${baseName} (${currentCount}).png`;
+
         const processedImage = await resizeImage(item.resultPreview, settings.downloadWidth, settings.downloadHeight);
         
         const link = document.createElement('a');
         link.href = processedImage;
-        link.download = getEditedFilename(item.file.name);
+        link.download = newName;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
@@ -677,7 +696,6 @@ function App() {
     }
   };
 
-  const activeItem = queue.find(i => i.id === selectedId);
   const successCount = queue.filter(i => i.status === 'success').length;
   const pendingCount = queue.filter(i => i.status === 'pending').length;
 
@@ -1110,6 +1128,24 @@ function App() {
                             />
                           </div>
                       </div>
+                    </div>
+
+                    {/* Filename Config MOVED HERE */}
+                    <div className="mb-2">
+                        <label className="text-[10px] text-secondary uppercase font-semibold block mb-1.5">{t.filenameConfig}</label>
+                        <input 
+                           type="text" 
+                           value={settings.filenamePattern || ''}
+                           onChange={(e) => updateSetting('filenamePattern', e.target.value)}
+                           className="w-full bg-black/5 dark:bg-white/5 border border-transparent focus:border-primary/50 rounded-lg px-2 py-1.5 text-xs text-foreground focus:outline-none"
+                           placeholder={t.regexPlaceholder}
+                        />
+                        {activeItem && settings.filenamePattern && (
+                          <div className="mt-1.5 text-[10px] text-secondary break-all">
+                             <span className="opacity-70">{t.regexPreview}</span>
+                             <span className="font-mono text-primary">{extractFilename(activeItem.file.name, settings.filenamePattern)} (1).png</span>
+                          </div>
+                        )}
                     </div>
 
                     <button

@@ -74,7 +74,11 @@ type TranslationKey =
   | 'layoutGenerator'
   | 'uploadLayoutText'
   | 'uploadLayoutSubText'
-  | 'importLayouts';
+  | 'importLayouts'
+  | 'filenameConfig'
+  | 'regexPattern'
+  | 'regexPlaceholder'
+  | 'regexPreview';
 
 export const translations: Record<Language, Record<TranslationKey, string>> = {
   en: {
@@ -150,7 +154,11 @@ export const translations: Record<Language, Record<TranslationKey, string>> = {
     layoutGenerator: 'Layout Generator',
     uploadLayoutText: 'Upload Layout Design',
     uploadLayoutSubText: 'Upload your rough layout/sketch',
-    importLayouts: '1. Import Layouts'
+    importLayouts: '1. Import Layouts',
+    filenameConfig: 'Filename Config (Regex)',
+    regexPattern: 'Barcode Extraction Regex',
+    regexPlaceholder: 'e.g. (\\d{13})',
+    regexPreview: 'Preview: '
   },
   vi: {
     appTitle: 'VP GEN IMAGE',
@@ -225,6 +233,10 @@ export const translations: Record<Language, Record<TranslationKey, string>> = {
     layoutGenerator: 'Tạo ảnh từ Layout',
     uploadLayoutText: 'Tải lên bản thiết kế',
     uploadLayoutSubText: 'Tải ảnh layout thô hoặc bản phác thảo',
-    importLayouts: '1. Nhập Layout'
+    importLayouts: '1. Nhập Layout',
+    filenameConfig: 'Cấu hình tên file (Regex)',
+    regexPattern: 'Regex lấy Barcode',
+    regexPlaceholder: 'ví dụ: (\\d{13})',
+    regexPreview: 'Xem trước: '
   }
 };

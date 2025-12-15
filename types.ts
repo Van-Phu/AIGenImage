@@ -40,6 +40,7 @@ export interface AppSettings {
   savedLogoMime?: string;
   downloadWidth?: number; // Cache user preference for width
   downloadHeight?: number; // Cache user preference for height
+  filenamePattern?: string; // Regex pattern for extracting barcode/name
 }
 
 export enum AppStatus {
