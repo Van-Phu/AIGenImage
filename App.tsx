@@ -1,9 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { editImageWithGemini } from './services/geminiService';
 import { AppStatus, QueueItem, Prompt, AppSettings, Resolution, Theme, Language } from './types';
-import { UploadIcon, MagicIcon, DownloadIcon, AlertIcon, RefreshIcon, SettingsIcon, SunIcon, MoonIcon, CheckIcon, ClockIcon, HelpCircleIcon, XIcon, StopIcon, LayoutIcon } from './components/Icons';
+import { UploadIcon, MagicIcon, DownloadIcon, AlertIcon, RefreshIcon, SunIcon, MoonIcon, CheckIcon, ClockIcon, HelpCircleIcon, XIcon, StopIcon, LayoutIcon } from './components/Icons';
 import { LoadingOverlay } from './components/LoadingOverlay';
-import { PromptManager } from './components/PromptManager';
 import { Drawer, ViewType } from './components/Drawer';
 import { translations } from './translations';
 
@@ -229,17 +228,16 @@ function App() {
     }
   });
 
-  // Prompt State
-  const [prompts, setPrompts] = useState<Prompt[]>(() => {
+  // Prompt State - Read-only (removed setPrompts)
+  const [prompts] = useState<Prompt[]>(() => {
     try {
+      // Still load from local storage if exists, but user cannot edit via UI anymore
       const saved = localStorage.getItem('gemini_prompts');
       return saved ? JSON.parse(saved) : DEFAULT_PROMPTS;
     } catch {
       return DEFAULT_PROMPTS;
     }
   });
-
-  const [showPromptManager, setShowPromptManager] = useState(false);
 
   // Batch processing state
   const [queue, setQueue] = useState<QueueItem[]>([]);
@@ -280,11 +278,6 @@ function App() {
       document.documentElement.classList.remove('dark');
     }
   }, [settings]);
-
-  // 3. Persist Prompts
-  useEffect(() => {
-    localStorage.setItem('gemini_prompts', JSON.stringify(prompts));
-  }, [prompts]);
 
   const checkApiKey = async () => {
     try {
@@ -362,8 +355,6 @@ function App() {
     // 3. Clear Queue (Images)
     setQueue([]);
     setSelectedId(null);
-    
-    // 4. Reset Prompt selection if needed, but we keep the prompts themselves as they might be work-in-progress.
   };
 
   // Helper to read file as base64
@@ -708,10 +699,26 @@ function App() {
   if (!hasApiKey) {
     return (
       <div className="h-screen bg-background flex flex-col items-center justify-center text-foreground px-4">
-        <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center mb-6 shadow-lg shadow-primary/20 text-white">
-          <MagicIcon />
+        {/* LOGO on Landing */}
+        <div className="mb-6 flex flex-col items-center">
+             <img 
+               src="https://hachihachi.com.vn/Content/images/logo.png" 
+               alt="Hachi Hachi"
+               className="h-20 w-auto object-contain mb-4"
+               onError={(e) => {
+                 e.currentTarget.style.display = 'none';
+                 e.currentTarget.nextElementSibling?.classList.remove('hidden');
+               }}
+             />
+             <div className="hidden w-20 h-20 rounded-2xl bg-gradient-to-br from-primary to-accent flex items-center justify-center text-white shadow-lg shadow-primary/20">
+               <span className="text-3xl font-bold">H</span>
+             </div>
         </div>
-        <h1 className="text-3xl font-bold mb-2 text-center">{t.appTitle} <span className="text-primary">Pro</span></h1>
+
+        <h1 className="text-3xl font-bold mb-2 text-center flex flex-col items-center gap-1">
+          {t.appTitle} 
+          <span className="text-xl text-primary font-normal tracking-wide">mini tool</span>
+        </h1>
         <p className="text-secondary max-w-md text-center mb-6">
           {t.apiKeyDesc}
         </p>
@@ -782,16 +789,6 @@ function App() {
 
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden h-full">
         
-        <PromptManager 
-          isOpen={showPromptManager} 
-          onClose={() => setShowPromptManager(false)}
-          prompts={prompts}
-          setPrompts={setPrompts}
-          activePromptId={settings.activePromptId}
-          setActivePromptId={(id) => updateSetting('activePromptId', id)}
-          language={settings.language}
-        />
-
         {/* Header - Fixed Top */}
         <header className="border-b border-border bg-surface/50 backdrop-blur-md shrink-0 z-30">
           <div className="max-w-full px-4 lg:px-6 h-16 flex items-center justify-between">
@@ -945,16 +942,11 @@ function App() {
                       </div>
                   </div>
 
-                  {/* 3. Prompt Configuration */}
+                  {/* 3. Prompt Configuration - MODIFIED: Removed Manage Button */}
                   <div>
                     <div className="flex items-center justify-between mb-3">
                       <h2 className="text-sm font-semibold">{t.promptSettings}</h2>
-                      <button 
-                        onClick={() => setShowPromptManager(true)}
-                        className="text-xs text-primary hover:text-primary/80 transition-colors flex items-center gap-1"
-                      >
-                        <SettingsIcon /> {t.manage}
-                      </button>
+                      {/* Manage button has been removed as per request to restrict editing */}
                     </div>
                     <div className="relative">
                       <select 

@@ -70,7 +70,7 @@ export const editImageWithGemini = async ({ base64Image, mimeType, prompt, logoB
     });
 
     let attempts = 0;
-    const maxAttempts = 3;
+    const maxAttempts = 5; // Increased retries for overloaded scenarios
 
     while (attempts < maxAttempts) {
       try {
@@ -101,11 +101,23 @@ export const editImageWithGemini = async ({ base64Image, mimeType, prompt, logoB
 
       } catch (e: any) {
         attempts++;
-        const isInternalError = e.code === 500 || e.status === 500 || e.message?.includes('Internal error') || e.status === 'INTERNAL';
         
-        if (isInternalError && attempts < maxAttempts) {
-           console.warn(`Gemini API 500 Error (Attempt ${attempts}/${maxAttempts}). Retrying...`);
-           await new Promise(r => setTimeout(r, 1500));
+        // Check for retryable errors: 503 (Overloaded/Unavailable) and 500 (Internal)
+        const isRetryable = 
+            e.code === 503 || 
+            e.status === 503 || 
+            e.status === 'UNAVAILABLE' || 
+            e.message?.includes('overloaded') ||
+            e.code === 500 || 
+            e.status === 500 || 
+            e.status === 'INTERNAL' ||
+            e.message?.includes('Internal error');
+        
+        if (isRetryable && attempts < maxAttempts) {
+           // Exponential backoff: 2s, 4s, 8s, 16s...
+           const delay = Math.pow(2, attempts) * 1000;
+           console.warn(`Gemini API Error (${e.status || e.code}: ${e.message}). Retrying in ${delay}ms... (Attempt ${attempts}/${maxAttempts})`);
+           await new Promise(r => setTimeout(r, delay));
            continue;
         }
         throw e;

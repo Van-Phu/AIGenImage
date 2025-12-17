@@ -82,10 +82,10 @@ type TranslationKey =
 
 export const translations: Record<Language, Record<TranslationKey, string>> = {
   en: {
-    appTitle: 'VP GEN IMAGE',
+    appTitle: 'Hachi Hachi',
     batchEditor: 'Batch Editor',
     loading: 'Loading...',
-    apiKeyMissing: 'VP GEN IMAGE',
+    apiKeyMissing: 'Hachi Hachi',
     apiKeyDesc: 'To use the advanced Gemini 3 Pro (Nano Banana) model, you must provide a valid Google Cloud API key.',
     connectKey: 'Connect API Key',
     readBilling: 'Get an API Key here',
@@ -161,10 +161,10 @@ export const translations: Record<Language, Record<TranslationKey, string>> = {
     regexPreview: 'Preview: '
   },
   vi: {
-    appTitle: 'VP GEN IMAGE',
+    appTitle: 'Hachi Hachi',
     batchEditor: 'Trình chỉnh sửa hàng loạt',
     loading: 'Đang tải...',
-    apiKeyMissing: 'VP GEN IMAGE',
+    apiKeyMissing: 'Hachi Hachi',
     apiKeyDesc: 'Để sử dụng mô hình Gemini 3 Pro (Nano Banana) nâng cao, bạn cần cung cấp Google Cloud API Key hợp lệ.',
     connectKey: 'Kết nối API Key',
     readBilling: 'Lấy API Key tại đây',
