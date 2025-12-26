@@ -78,7 +78,40 @@ type TranslationKey =
   | 'filenameConfig'
   | 'regexPattern'
   | 'regexPlaceholder'
-  | 'regexPreview';
+  | 'regexPreview'
+  | 'newTitle'
+  | 'referenceLayout'
+  | 'productAttributes'
+  | 'attributesPlaceholder'
+  | 'referenceUploaded'
+  | 'uploadProductsQueue'
+  | 'editProductDetails'
+  | 'productName'
+  | 'addAttribute'
+  | 'iconOptional'
+  | 'autoGenIcon'
+  | 'hasIcon'
+  | 'globalSettings'
+  | 'addProduct'
+  | 'uploadProductImage'
+  | 'productImageMissing'
+  | 'productInfo'
+  | 'configure'
+  | 'close'
+  | 'resolutionConfig'
+  | 'modeReference'
+  | 'modeBlueprint'
+  | 'modeAutoDesign'
+  | 'uploadBlueprint'
+  | 'importBlueprints'
+  | 'addBlueprints'
+  | 'blueprintInstructions'
+  | 'blueprintInstructionsPlaceholder'
+  | 'refineTitle'
+  | 'refinePlaceholder'
+  | 'refineButton'
+  | 'moduleMarketing'
+  | 'moduleSystem';
 
 export const translations: Record<Language, Record<TranslationKey, string>> = {
   en: {
@@ -91,16 +124,16 @@ export const translations: Record<Language, Record<TranslationKey, string>> = {
     readBilling: 'Get an API Key here',
     model: 'Model',
     switchKey: 'Change Key',
-    importImages: '1. Import Images',
-    uploadText: 'Upload Product Images',
+    importImages: 'Import Images',
+    uploadText: 'Upload Images to Edit',
     uploadSubText: 'Drag & drop multiple files or folders',
     dropMore: 'Drop more files here',
-    newLogo: '2. New Logo',
-    logoSubText: '(Replaces header logo)',
+    newLogo: 'New Logo',
+    logoSubText: '(Global for all items)',
     logoUploaded: 'Logo uploaded',
-    clickUpload: 'Click to upload logo',
+    clickUpload: 'Click to upload',
     remove: 'Remove',
-    promptSettings: '3. Prompt Settings',
+    promptSettings: 'Prompt Settings',
     manage: 'Manage',
     queue: 'Queue',
     clearAll: 'Clear All',
@@ -110,7 +143,7 @@ export const translations: Record<Language, Record<TranslationKey, string>> = {
     download: 'Download',
     regenerate: 'Regenerate',
     noImageSelected: 'No image selected',
-    selectToView: 'Select an image from the queue to view',
+    selectToView: 'Select a product to view details',
     originalInput: 'Original Input',
     generatedResult: 'Generated Result',
     error: 'Error',
@@ -126,7 +159,7 @@ export const translations: Record<Language, Record<TranslationKey, string>> = {
     deletePromptConfirm: 'Are you sure you want to delete this prompt?',
     discardChanges: 'You have unsaved changes. Discard them?',
     minOnePrompt: 'You must have at least one prompt.',
-    settings: '4. System Settings',
+    settings: 'System Settings',
     theme: 'Theme',
     language: 'Language',
     resolution: 'Image Resolution',
@@ -152,13 +185,46 @@ export const translations: Record<Language, Record<TranslationKey, string>> = {
     keepEmptyOriginal: 'Leave empty for original size',
     menuLayout: 'Layout Gen',
     layoutGenerator: 'Layout Generator',
-    uploadLayoutText: 'Upload Layout Design',
-    uploadLayoutSubText: 'Upload your rough layout/sketch',
-    importLayouts: '1. Import Layouts',
+    uploadLayoutText: 'Reference Layout', 
+    uploadLayoutSubText: 'Upload reference design',
+    importLayouts: 'Products List',
+    uploadProductsQueue: 'Upload Product Images (Max 10)',
     filenameConfig: 'Filename Config (Regex)',
     regexPattern: 'Barcode Extraction Regex',
     regexPlaceholder: 'e.g. (\\d{13})',
-    regexPreview: 'Preview: '
+    regexPreview: 'Preview: ',
+    newTitle: 'Product Title',
+    referenceLayout: 'Reference Layout',
+    productAttributes: 'Attributes',
+    attributesPlaceholder: 'e.g. Waterproof',
+    referenceUploaded: 'Reference Layout uploaded',
+    editProductDetails: 'Product Configuration',
+    productName: 'Product Name',
+    addAttribute: '+ Add Attribute',
+    iconOptional: 'Icon (Optional)',
+    autoGenIcon: 'Auto-Gen',
+    hasIcon: 'Icon Set',
+    globalSettings: 'Global Assets',
+    addProduct: 'Add Product',
+    uploadProductImage: 'Product Image',
+    productImageMissing: 'Missing Image',
+    productInfo: 'Product Information',
+    configure: 'Configure',
+    close: 'Done',
+    resolutionConfig: 'Output Resolution',
+    modeReference: 'Reference Image',
+    modeBlueprint: 'Blueprint / Draw',
+    modeAutoDesign: 'Auto Design',
+    uploadBlueprint: 'Blueprint Image',
+    importBlueprints: 'Blueprints List',
+    addBlueprints: 'Upload Blueprints',
+    blueprintInstructions: 'Instructions / Context',
+    blueprintInstructionsPlaceholder: 'e.g. This is a tall plastic bottle. Make the liquid orange. The title should be green.',
+    refineTitle: 'Refine / Edit Result',
+    refinePlaceholder: 'Describe changes to this image (e.g., make background darker, change title color...)',
+    refineButton: 'Update Image',
+    moduleMarketing: 'Marketing',
+    moduleSystem: 'System'
   },
   vi: {
     appTitle: 'Hachi Hachi',
@@ -170,27 +236,27 @@ export const translations: Record<Language, Record<TranslationKey, string>> = {
     readBilling: 'Lấy API Key tại đây',
     model: 'Mô hình',
     switchKey: 'Đổi Key',
-    importImages: '1. Nhập Hình ảnh',
-    uploadText: 'Tải ảnh sản phẩm lên',
+    importImages: 'Nhập Hình ảnh',
+    uploadText: 'Tải ảnh cần chỉnh sửa',
     uploadSubText: 'Kéo thả nhiều tập tin hoặc thư mục',
     dropMore: 'Thả thêm tập tin vào đây',
-    newLogo: '2. Logo Mới',
-    logoSubText: '(Thay thế logo trên header)',
+    newLogo: 'Logo Mới',
+    logoSubText: '(Dùng chung cho tất cả)',
     logoUploaded: 'Đã tải logo',
-    clickUpload: 'Nhấn để tải logo',
+    clickUpload: 'Tải logo',
     remove: 'Xóa',
-    promptSettings: '3. Cấu hình Prompt',
+    promptSettings: 'Cấu hình Prompt',
     manage: 'Quản lý',
     queue: 'Danh sách chờ',
     clearAll: 'Xóa tất cả',
     noImages: 'Chưa có ảnh nào',
     processing: 'Đang xử lý...',
-    generateAll: 'Tạo ảnh hàng loạt',
+    generateAll: 'Tạo Layout',
     download: 'Tải xuống',
     regenerate: 'Tạo lại',
     noImageSelected: 'Chưa chọn ảnh',
-    selectToView: 'Chọn một ảnh từ danh sách để xem',
-    originalInput: 'Ảnh gốc',
+    selectToView: 'Chọn sản phẩm để xem kết quả',
+    originalInput: 'Input',
     generatedResult: 'Kết quả',
     error: 'Lỗi',
     tryAgain: 'Thử lại',
@@ -205,7 +271,7 @@ export const translations: Record<Language, Record<TranslationKey, string>> = {
     deletePromptConfirm: 'Bạn có chắc chắn muốn xóa prompt này?',
     discardChanges: 'Bạn có thay đổi chưa lưu. Hủy bỏ chúng?',
     minOnePrompt: 'Bạn phải giữ ít nhất một prompt.',
-    settings: '4. Độ phân giải & Tải xuống',
+    settings: 'Cấu hình chung',
     theme: 'Giao diện',
     language: 'Ngôn ngữ',
     resolution: 'Độ phân giải ảnh',
@@ -231,12 +297,45 @@ export const translations: Record<Language, Record<TranslationKey, string>> = {
     keepEmptyOriginal: 'Để trống để giữ kích thước gốc',
     menuLayout: 'Tạo Layout',
     layoutGenerator: 'Tạo ảnh từ Layout',
-    uploadLayoutText: 'Tải lên bản thiết kế',
-    uploadLayoutSubText: 'Tải ảnh layout thô hoặc bản phác thảo',
-    importLayouts: '1. Nhập Layout',
+    uploadLayoutText: 'Layout Mẫu', 
+    uploadLayoutSubText: 'Tải ảnh thiết kế mẫu',
+    importLayouts: 'Danh sách Sản phẩm',
+    uploadProductsQueue: 'Tải Ảnh Sản Phẩm (Max 10)',
     filenameConfig: 'Cấu hình tên file (Regex)',
     regexPattern: 'Regex lấy Barcode',
     regexPlaceholder: 'ví dụ: (\\d{13})',
-    regexPreview: 'Xem trước: '
+    regexPreview: 'Xem trước: ',
+    newTitle: 'Tên sản phẩm',
+    referenceLayout: 'Layout Mẫu',
+    productAttributes: 'Thuộc tính',
+    attributesPlaceholder: 'VD: Chống nước',
+    referenceUploaded: 'Đã tải Layout mẫu',
+    editProductDetails: 'Cấu hình Sản phẩm',
+    productName: 'Tên hiển thị',
+    addAttribute: 'Thêm thuộc tính',
+    iconOptional: 'Icon',
+    autoGenIcon: 'Tự tạo Icon',
+    hasIcon: 'Đã có Icon',
+    globalSettings: 'Tài nguyên chung',
+    addProduct: 'Thêm sản phẩm',
+    uploadProductImage: 'Ảnh sản phẩm',
+    productImageMissing: 'Thiếu ảnh',
+    productInfo: 'Thông tin sản phẩm',
+    configure: 'Cấu hình',
+    close: 'Hoàn tất',
+    resolutionConfig: 'Độ phân giải xuất',
+    modeReference: 'Ảnh mẫu',
+    modeBlueprint: 'Bản vẽ',
+    modeAutoDesign: 'Tự thiết kế',
+    uploadBlueprint: 'Ảnh bản vẽ',
+    importBlueprints: 'Danh sách Bản vẽ',
+    addBlueprints: 'Tải bản vẽ (Max 10)',
+    blueprintInstructions: 'Mô tả / Ngữ cảnh',
+    blueprintInstructionsPlaceholder: 'VD: Đây là chai nước rửa chén. Màu chất lỏng là vàng chanh. Tiêu đề màu xanh lá.',
+    refineTitle: 'Tinh chỉnh kết quả',
+    refinePlaceholder: 'Mô tả thay đổi muốn thực hiện trên ảnh này (VD: làm nền tối hơn, đổi màu chữ...)',
+    refineButton: 'Cập nhật ảnh',
+    moduleMarketing: 'Marketing',
+    moduleSystem: 'Hệ thống'
   }
 };
